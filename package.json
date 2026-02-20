@@ -11,12 +11,22 @@
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "start": "npm run backend",
     "start:backend": "cd backend && npm run start:dev",
-    "start:frontend": "cd frontend && npm start"
+    "start:frontend": "cd frontend && npm start",
+    "dev": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
   },
   "engines": {
     "node": ">=20.0.0"
   },
-  "keywords": ["accessibility", "ER", "emergency-room", "healthcare", "equity"],
+  "keywords": [
+    "accessibility",
+    "ER",
+    "emergency-room",
+    "healthcare",
+    "equity"
+  ],
   "author": "",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
 }
