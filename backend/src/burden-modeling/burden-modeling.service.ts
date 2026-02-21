@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ComputeBurdenDto } from './dto/compute-burden.dto';
 import { WaitTimesService } from '../wait-times/wait-times.service';
+import {
+  MEDIAN_TOTAL_STAY_MINUTES,
+  MEDIAN_TO_PHYSICIAN_MINUTES,
+} from './modelConstants';
 
 export interface BurdenCurvePoint {
   timeMinutes: number;
@@ -19,8 +23,6 @@ export class BurdenModelingService {
     const points: BurdenCurvePoint[] = [];
     const maxTime = Math.min(180, dto.waitTimeMinutes + 60); // Up to 3 hours
 
-    const hospital = this.waitTimesService.getHospitalWaitTime(dto.facilityId);
-    const expectedWait = hospital?.waitMinutes ?? 180;
     const leaveSignalWeight =
       this.waitTimesService.computeLeaveSignalWeight(dto.facilityId);
 
@@ -29,14 +31,10 @@ export class BurdenModelingService {
     );
 
     for (let t = 0; t <= maxTime; t += 5) {
-      const baseWaitingImpact = Math.min((t / expectedWait) * 50, 60);
       const baselineHazard = this.baselineHazard(t, dto.estimatedCtasLevel);
-      let risk =
-        baselineHazard *
-        dto.vulnerabilityMultiplier *
-        (1 + baseWaitingImpact / 100);
+      const risk = baselineHazard * dto.vulnerabilityMultiplier;
 
-      // Scale LWBS curve by environment-level disengagement context
+      // Scale LWBS curve by environment-level disengagement context (HQCA)
       const lwbsRisk = risk * leaveSignalWeight;
 
       points.push({
@@ -49,6 +47,10 @@ export class BurdenModelingService {
 
     let burden = this.computeBurdenScore(points, dto);
 
+    // CIHI-anchored time-based burden (controls the time curve)
+    burden += this.computeBaseWaitingImpact(dto.waitTimeMinutes);
+
+    // LWBS escalation for planning-to-leave (HQCA)
     if (planningToLeave) {
       burden += 15 * leaveSignalWeight;
     }
@@ -72,6 +74,16 @@ export class BurdenModelingService {
       })),
       confidenceInterval: 0.95,
     };
+  }
+
+  /** CIHI-anchored: 0 min → 0, 238 min → ~60, acceleration after 90 min */
+  private computeBaseWaitingImpact(minutesWaited: number): number {
+    const normalized = minutesWaited / MEDIAN_TOTAL_STAY_MINUTES;
+    let impact = Math.min(normalized * 60, 60);
+    if (minutesWaited > MEDIAN_TO_PHYSICIAN_MINUTES) {
+      impact += 8;
+    }
+    return Math.min(impact, 75);
   }
 
   private computeBurdenScore(
