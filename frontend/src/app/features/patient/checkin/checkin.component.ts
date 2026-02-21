@@ -1,7 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { I18nService } from '../patient.component';
-import { CheckInFormComponent, CheckInFormResult } from '../../../components/patient/checkin-form.component';
+import {
+  CheckInFormComponent,
+  CheckInFormResult,
+} from '../../../components/patient/checkin-form.component';
 
 @Component({
   selector: 'app-checkin',
@@ -12,9 +15,13 @@ import { CheckInFormComponent, CheckInFormResult } from '../../../components/pat
       <app-checkin-form (completed)="onComplete($event)" />
     </div>
   `,
-  styles: [`
-    .checkin-page { padding: 0.5rem 0; }
-  `],
+  styles: [
+    `
+      .checkin-page {
+        padding: 0.5rem 0;
+      }
+    `,
+  ],
 })
 export class CheckinComponent {
   private readonly router = inject(Router);
@@ -22,9 +29,10 @@ export class CheckinComponent {
 
   onComplete(result: CheckInFormResult): void {
     // Ready for P2 integration: addCheckIn(patientId, checkIn)
-    const patientId = typeof sessionStorage !== 'undefined'
-      ? sessionStorage.getItem('patient_id') ?? 'unknown'
-      : 'unknown';
+    const patientId =
+      typeof sessionStorage !== 'undefined'
+        ? (sessionStorage.getItem('patient_id') ?? 'unknown')
+        : 'unknown';
     console.log('[P3 CheckIn] result ready for store integration:', {
       patientId,
       discomfort: result.discomfort,
