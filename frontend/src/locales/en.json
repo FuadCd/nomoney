@@ -20,6 +20,7 @@
   "languageLabel": "Language",
   "confirmButton": "Confirm and Check In",
   "waitingTitle": "You're checked in!",
+  "waitingTimeLabel": "Estimated wait",
   "waitingTime": "Estimated wait: ~15 minutes",
   "waitingMessage": "We'll check in with you soon",
   "passportTitle": "Your Accessibility Passport",

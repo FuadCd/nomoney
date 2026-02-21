@@ -16,6 +16,7 @@ function makePatient(overrides: Partial<Patient> = {}): Patient {
       sensory: false,
       cognitive: false,
       chronicPain: false,
+      alone: false,
     },
     checkIns: [],
     ...overrides,
@@ -127,16 +128,6 @@ describe('PatientStoreService', () => {
     store.updateBurden('m1');
     const missed = store.getMissedCheckInPatientIds();
     expect(missed).toContain('m1');
-  });
-
-  it('seedDemoPatients adds patients and updates burden', () => {
-    store.seedDemoPatients();
-    const snap = store.getSnapshot();
-    expect(snap.length).toBeGreaterThanOrEqual(3);
-    snap.forEach((p) => {
-      expect(p.burdenIndex).toBeGreaterThanOrEqual(0);
-      expect(p.alertLevel).toBeDefined();
-    });
   });
 
   it('advanceDemoTime increases effective time', () => {

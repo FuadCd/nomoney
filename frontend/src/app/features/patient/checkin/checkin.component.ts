@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { I18nService } from '../patient.component';
+import { CheckInService } from '../../../core/services/check-in.service';
+import { PatientStoreService } from '../../../core/patient-store.service';
 import {
   CheckInFormComponent,
   CheckInFormResult,
@@ -43,6 +45,8 @@ import {
 })
 export class CheckinComponent {
   private readonly router = inject(Router);
+  private readonly checkInService = inject(CheckInService);
+  private readonly store = inject(PatientStoreService);
   readonly i18n = inject(I18nService);
 
   /** Back: previous in session sequence is Waiting. */
@@ -51,18 +55,45 @@ export class CheckinComponent {
   }
 
   onComplete(result: CheckInFormResult): void {
-    // Ready for P2 integration: addCheckIn(patientId, checkIn)
     const patientId =
       typeof sessionStorage !== 'undefined'
         ? (sessionStorage.getItem('patient_id') ?? 'unknown')
         : 'unknown';
-    console.log('[P3 CheckIn] result ready for store integration:', {
-      patientId,
+
+    const assistanceRequested = this.mapNeedsToBackend(result.needs);
+    const intendsToStay = result.planningToLeave !== 'leaving';
+    const timestamp = new Date().toISOString();
+
+    const checkInPayload = {
       discomfort: result.discomfort,
       needsHelp: result.needs.length > 0 && !result.needs.includes('none'),
       planningToLeave: result.planningToLeave === 'leaving',
       timestamp: Date.now(),
-    });
-    this.router.navigate(['/patient/waiting']);
+    };
+
+    this.checkInService
+      .submitCheckIn({
+        passportId: patientId,
+        discomfortLevel: result.discomfort,
+        assistanceRequested: assistanceRequested.length ? assistanceRequested : undefined,
+        intendsToStay,
+        timestamp,
+      })
+      .subscribe({
+        next: () => {
+          this.store.addCheckIn(patientId, checkInPayload);
+          this.router.navigate(['/patient/waiting']);
+        },
+        error: () => {
+          this.store.addCheckIn(patientId, checkInPayload);
+          this.router.navigate(['/patient/waiting']);
+        },
+      });
+  }
+
+  /** Map form need keys to backend assistanceRequested values. */
+  private mapNeedsToBackend(needs: string[]): string[] {
+    const filtered = needs.filter((k) => k !== 'none');
+    return filtered.map((k) => (k === 'quiet' ? 'quiet-space' : k));
   }
 }

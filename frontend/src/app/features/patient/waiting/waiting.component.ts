@@ -1,6 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { I18nService } from '../patient.component';
+import { PatientStoreService } from '../../../core/patient-store.service';
+import { WaitTimesService } from '../../../core/services/wait-times.service';
+import { HOSPITAL_WAIT_MINUTES } from '../../../core/constants/hospital-wait-minutes';
 
 @Component({
   selector: 'app-waiting',
@@ -14,7 +17,13 @@ import { I18nService } from '../patient.component';
       <p class="pid">
         {{ i18n.t('patientId') }}: <strong>{{ patientId() }}</strong>
       </p>
-      <p class="time">{{ i18n.t('waitingTime') }}</p>
+      <p class="time">
+        @if (estimatedWaitFormatted(); as formatted) {
+          {{ i18n.t('waitingTimeLabel') }}: {{ formatted }}
+        } @else {
+          {{ i18n.t('waitingTime') }}
+        }
+      </p>
       <p class="message">{{ i18n.t('waitingMessage') }}</p>
       <a class="checkin-link" routerLink="/patient/checkin" aria-label="Go to check-in">
         {{ i18n.t('checkinTitle') }}
@@ -107,16 +116,56 @@ import { I18nService } from '../patient.component';
     `,
   ],
 })
-export class WaitingComponent {
+export class WaitingComponent implements OnInit {
   readonly i18n = inject(I18nService);
   private readonly router = inject(Router);
+  private readonly store = inject(PatientStoreService);
+  private readonly waitTimes = inject(WaitTimesService);
+
+  readonly patientId = signal(
+    typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem('patient_id') ?? '—') : '—',
+  );
+  readonly estimatedWaitFormatted = signal<string | null>(null);
+
+  ngOnInit(): void {
+    const pid = this.patientId();
+    if (pid === '—') return;
+    const patient = this.store.getPatientById(pid);
+    const hospitalKey =
+      patient?.assignedHospitalKey ??
+      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('patient_hospital_key') : null);
+    if (!hospitalKey) return;
+
+    const setWaitFromMinutes = (waitMinutes: number) => {
+      this.estimatedWaitFormatted.set(this.formatWaitMinutes(waitMinutes));
+    };
+
+    this.waitTimes.getHospitalWaitTime(hospitalKey).subscribe({
+      next: (hospital) => {
+        if (hospital?.waitMinutes != null) {
+          setWaitFromMinutes(hospital.waitMinutes);
+        } else {
+          const fallback = HOSPITAL_WAIT_MINUTES[hospitalKey];
+          if (fallback != null) setWaitFromMinutes(fallback);
+        }
+      },
+      error: () => {
+        const fallback = HOSPITAL_WAIT_MINUTES[hospitalKey];
+        if (fallback != null) setWaitFromMinutes(fallback);
+      },
+    });
+  }
+
+  /** Format waitMinutes as "Xh Ym" or "N min". */
+  private formatWaitMinutes(totalMinutes: number): string {
+    const h = Math.floor(totalMinutes / 60);
+    const m = Math.round(totalMinutes % 60);
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m} min`;
+  }
 
   /** Back: previous in session sequence is Intake step 3 (confirm). */
   back(): void {
     this.router.navigate(['/patient/intake/3']);
   }
-
-  readonly patientId = signal(
-    typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem('patient_id') ?? '—') : '—',
-  );
 }

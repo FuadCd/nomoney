@@ -10,19 +10,39 @@ import {
 } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
-/* ─── Shared accessibility profile type ─── */
+/* ─── Shared accessibility profile type (vulnerability toggles) ─── */
 export interface IntakeAccessibilityProfile {
-  mobility: boolean;
-  sensory: boolean;
-  chronicPain: boolean;
-  cognitive: boolean;
-  language: boolean;
-  supportPerson: boolean;
+  chronicPain: boolean;  // 0.25
+  mobility: boolean;     // 0.20
+  sensory: boolean;     // 0.15 (noisy/overwhelming or vision/hearing)
+  cognitive: boolean;    // 0.15
+  alone: boolean;       // 0.10 — I am here alone without support
+  language: boolean;    // 0.10
 }
 
 /* ─── Inline i18n translations ─── */
 const EN: Record<string, string> = {
   stepXof3: 'Step {{step}} of 3',
+  stepXof4: 'Step {{step}} of 4',
+  hospitalQuestion: 'Which hospital are you waiting at?',
+  hospitalPlaceholder: 'Select a hospital',
+  hospitalHint: 'This helps us show you the right wait times and support options.',
+  discomfortQuestion: 'How uncomfortable are you right now?',
+  discomfort1: '1 – Minimal',
+  discomfort2: '2 – Mild',
+  discomfort3: '3 – Moderate',
+  discomfort4: '4 – Severe',
+  discomfort5: '5 – Emergency',
+  leavingQuestion: 'Are you thinking about leaving before being seen?',
+  leavingHint: 'Your answer helps us prioritize support.',
+  continue: 'Continue',
+  accessibilityTitle: 'Do any of these apply to you today?',
+  toggle_chronicPain: 'Ongoing pain that makes waiting difficult',
+  toggle_mobility: 'Difficulty standing, walking, or using stairs',
+  toggle_sensory: 'Busy or noisy spaces feel overwhelming, or vision or hearing difficulty',
+  toggle_cognitive: 'Difficulty processing or remembering information',
+  toggle_alone: 'I am here alone without support',
+  toggle_language: 'I would benefit from translation assistance',
   complaintQuestion: 'What brings you in today?',
   complaintPlaceholder: 'Describe what brings you in today',
   severityQuestion: 'How much discomfort are you feeling?',
@@ -51,6 +71,7 @@ const EN: Record<string, string> = {
   languageLabel: 'Language',
   confirmButton: 'Confirm and Check In',
   waitingTitle: "You're checked in!",
+  waitingTimeLabel: 'Estimated wait',
   waitingTime: 'Estimated wait: ~15 minutes',
   waitingMessage: "We'll check in with you soon",
   passportTitle: 'Your Accessibility Passport',
@@ -86,6 +107,26 @@ const EN: Record<string, string> = {
 
 const FR: Record<string, string> = {
   stepXof3: 'Étape {{step}} sur 3',
+  stepXof4: 'Étape {{step}} sur 4',
+  hospitalQuestion: 'À quel hôpital attendez-vous?',
+  hospitalHint: 'Cela nous aide à afficher les temps d’attente et les options de soutien.',
+  hospitalPlaceholder: 'Choisir un hôpital',
+  discomfortQuestion: "Quel est votre niveau d'inconfort en ce moment?",
+  discomfort1: '1 – Minimal',
+  discomfort2: '2 – Léger',
+  discomfort3: '3 – Modéré',
+  discomfort4: '4 – Sévère',
+  discomfort5: '5 – Urgence',
+  leavingQuestion: "Pensez-vous partir avant d'être vu par un médecin?",
+  leavingHint: 'Votre réponse nous aide à prioriser le soutien.',
+  continue: 'Continuer',
+  accessibilityTitle: "Est-ce que l'un de ces points s'applique à vous aujourd'hui?",
+  toggle_chronicPain: "Douleur continue qui rend l'attente difficile",
+  toggle_mobility: 'Difficulté à rester debout, marcher ou utiliser les escaliers',
+  toggle_sensory: 'Les espaces bruyants ou chargés sont accablants, ou difficulté visuelle ou auditive',
+  toggle_cognitive: "Difficulté à traiter ou retenir l'information",
+  toggle_alone: 'Je suis seul(e) sans soutien',
+  toggle_language: "Je bénéficierais d'une aide à la traduction",
   complaintQuestion: "Qu'est-ce qui vous amène aujourd'hui ?",
   complaintPlaceholder: "Décrivez ce qui vous amène aujourd'hui",
   severityQuestion: "Quel est votre niveau d'inconfort ?",
@@ -114,6 +155,7 @@ const FR: Record<string, string> = {
   languageLabel: 'Langue',
   confirmButton: "Confirmer et s'enregistrer",
   waitingTitle: 'Vous êtes enregistré !',
+  waitingTimeLabel: 'Attente estimée',
   waitingTime: 'Attente estimée : ~15 minutes',
   waitingMessage: 'Nous reviendrons bientôt vers vous',
   passportTitle: "Votre Passeport d'Accessibilité",

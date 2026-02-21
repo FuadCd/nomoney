@@ -3,14 +3,18 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import { I18nService, IntakeAccessibilityProfile } from '../patient.component';
-import { StepComplaintComponent } from '../../../components/patient/step-complaint.component';
-import { StepAccessibilityComponent } from '../../../components/patient/step-accessibility.component';
+import { StepContextRiskComponent, ContextRiskResult } from '../../../components/patient/step-context-risk.component';
+import { StepAccessibilityTogglesComponent } from '../../../components/patient/step-accessibility-toggles.component';
 import { StepConfirmComponent } from '../../../components/patient/step-confirm.component';
 
 @Component({
   selector: 'app-intake',
   standalone: true,
-  imports: [StepComplaintComponent, StepAccessibilityComponent, StepConfirmComponent],
+  imports: [
+    StepContextRiskComponent,
+    StepAccessibilityTogglesComponent,
+    StepConfirmComponent,
+  ],
   template: `
     <div class="intake">
       <button type="button" class="back-link back-btn" (click)="back()">&larr; Back</button>
@@ -30,19 +34,19 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
       @switch (stepParam()) {
         @case (1) {
           <div class="fade-in">
-            <app-step-complaint [useEmojiSeverity]="false" (completed)="onComplaintDone($event)" />
+            <app-step-context-risk (completed)="onContextRiskDone($event)" />
           </div>
         }
         @case (2) {
           <div class="fade-in">
-            <app-step-accessibility (completed)="onAccessibilityDone($event)" />
+            <app-step-accessibility-toggles (completed)="onAccessibilityDone($event)" />
           </div>
         }
         @case (3) {
           <div class="fade-in">
             <app-step-confirm
-              [complaint]="complaint()"
-              [severity]="severity()"
+              [hospitalKey]="hospitalKey()"
+              [discomfortLevel]="discomfortLevel()"
               [accessibilityProfile]="accessibilityProfile()"
               [anonymousId]="anonymousId"
             />
@@ -118,15 +122,15 @@ export class IntakeComponent {
     this.route.paramMap.pipe(map((p) => Math.min(3, Math.max(1, +(p.get('step') ?? 1) || 1)))),
     { initialValue: 1 }
   );
-  readonly complaint = signal('');
-  readonly severity = signal(1);
+  readonly hospitalKey = signal<string>('');
+  readonly discomfortLevel = signal(1);
   readonly accessibilityProfile = signal<IntakeAccessibilityProfile>({
+    chronicPain: false,
     mobility: false,
     sensory: false,
-    chronicPain: false,
     cognitive: false,
+    alone: false,
     language: false,
-    supportPerson: false,
   });
   readonly anonymousId = Math.random().toString(36).substring(2, 10).toUpperCase();
 
@@ -136,9 +140,9 @@ export class IntakeComponent {
     }
   }
 
-  onComplaintDone(data: { complaint: string; severity: number }): void {
-    this.complaint.set(data.complaint);
-    this.severity.set(data.severity);
+  onContextRiskDone(data: ContextRiskResult): void {
+    this.hospitalKey.set(data.hospitalKey);
+    this.discomfortLevel.set(data.discomfortLevel);
     this.router.navigate(['/patient/intake/2']);
     window.scrollTo(0, 0);
   }
@@ -149,7 +153,7 @@ export class IntakeComponent {
     window.scrollTo(0, 0);
   }
 
-  /** Back follows session sequence: step 1 → login; step 2 → step 1; step 3 → step 2. */
+  /** Back follows session sequence: step 1 → landing; step 2 → 1; step 3 → 2. */
   back(): void {
     const step = this.stepParam();
     if (step === 1) {
