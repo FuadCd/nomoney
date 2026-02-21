@@ -51,13 +51,11 @@ export class BurdenModelingService {
     burdenCurve: BurdenCurvePoint[];
     equityGapScore: number;
     burden: number;
-    alertStatus: string;
-    suggestAmberCheckIn: boolean;
+    alertStatus: 'GREEN' | 'AMBER' | 'RED';
+    suggestAmberCheckIn?: boolean;
+    disengagementWindowMinutes?: number;
     baselineCurve: unknown[];
     confidenceInterval: number;
-    burden?: number;
-    alertStatus?: 'GREEN' | 'AMBER' | 'RED';
-    disengagementWindowMinutes?: number;
   }> {
     return this.api.post('/burden-modeling/compute', input);
   }

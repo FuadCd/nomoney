@@ -54,7 +54,7 @@ export class BurdenUpdaterService implements OnDestroy {
                 this.store.setBurdenFromBackend(
                   p.id,
                   res.burden,
-                  res.alertStatus,
+                  res.alertStatus as 'GREEN' | 'AMBER' | 'RED',
                   res.burdenCurve,
                   res.disengagementWindowMinutes
                 );

@@ -43,6 +43,6 @@ export interface Patient {
   intendsToStay?: boolean;
   /** From intake: discomfort 1–5 (1=Minimal, 5=Severe). Used in burden when no check-ins yet. */
   discomfortLevel?: number;
-  /** From backend when at disengagement risk: expected minutes until leave (for staff dashboard). */
+  /** From backend when at disengagement risk: curve-based window (displayed as ~30–60 min range). */
   disengagementWindowMinutes?: number;
 }

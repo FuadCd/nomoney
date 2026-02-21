@@ -62,15 +62,7 @@ const MEDIAN_PHYSICIAN_MINUTES = 87;
                 </div>
                 @if (hasLwbsRisk(p)) {
                   <div class="card-row risk-row">
-                    <span class="lwbs-risk">⚠️ Disengagement risk</span>
-                    @if (p.disengagementWindowMinutes != null) {
-                      <span class="lwbs-window"> — Expected to leave in {{ p.disengagementWindowMinutes }} minutes</span>
-                    }
-                  </div>
-                }
-                @if (getMinutesWaited(p) > MEDIAN_PHYSICIAN_MINUTES) {
-                  <div class="card-row risk-row">
-                    <span class="post-median">⏳ Post-Median Risk Window</span>
+                    <span class="lwbs-risk">⚠️ Disengagement risk elevated — Recommend proactive check-in</span>
                   </div>
                 }
                 <div class="card-row action-row">
@@ -121,10 +113,7 @@ const MEDIAN_PHYSICIAN_MINUTES = 87;
     .flag { font-size: 0.85rem; background: #e3f2fd; color: #0d47a1; padding: 0.15rem 0.4rem; border-radius: 4px; }
     .no-flags { color: #888; font-style: italic; }
     .risk-row { margin-top: 0.5rem; }
-    .lwbs-risk, .post-median { font-size: 0.9rem; font-weight: 600; }
-    .lwbs-risk { color: #b71c1c; }
-    .lwbs-window { font-weight: 500; color: #c62828; }
-    .post-median { color: #e65100; }
+    .lwbs-risk { font-size: 0.9rem; font-weight: 600; color: #b71c1c; }
     .action-row { margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #eee; }
     .action-row .actions { font-weight: 500; color: #1b5e20; }
     .empty { color: #888; font-style: italic; padding: 1rem; }
@@ -170,25 +159,52 @@ export class StaffComponent implements OnInit {
 
   hasLwbsRisk(p: Patient): boolean {
     const intendsToStayFalse = p.checkIns.some((c) => c.planningToLeave);
-    const highBurden = p.burdenIndex >= 50;
-    return intendsToStayFalse || highBurden;
+    const minutesWaited = this.getMinutesWaited(p);
+    const highBurden = p.burdenIndex >= 70;
+    const pastTrigger = minutesWaited >= MEDIAN_PHYSICIAN_MINUTES;
+
+    // Credible risk pattern: missed check-in + past early-risk window + elevated burden
+    const credibleDisengagementRisk =
+      !!p.missedCheckIn &&
+      minutesWaited > MEDIAN_PHYSICIAN_MINUTES &&
+      p.burdenIndex > 55;
+
+    return (
+      intendsToStayFalse ||
+      highBurden ||
+      pastTrigger ||
+      credibleDisengagementRisk
+    );
   }
 
   getSuggestedActions(p: Patient): string {
-    const actions: string[] = [];
     const minutesWaited = this.getMinutesWaited(p);
-    const postMedian = minutesWaited > MEDIAN_PHYSICIAN_MINUTES;
-    const highBurden = p.burdenIndex >= 50;
+    const planningToLeave = p.checkIns.some((c) => c.planningToLeave);
+    const highBurden = p.burdenIndex >= 70;
+    const pastTrigger = minutesWaited >= MEDIAN_PHYSICIAN_MINUTES;
 
+    const credibleDisengagementRisk =
+      !!p.missedCheckIn &&
+      minutesWaited > MEDIAN_PHYSICIAN_MINUTES &&
+      p.burdenIndex > 55;
+
+    if (credibleDisengagementRisk) {
+      return 'Immediate staff outreach — credible disengagement risk (missed check-in + extended wait + elevated burden)';
+    }
+
+    if (minutesWaited < 87 && !planningToLeave) {
+      return 'Accessibility check (optional)';
+    }
+
+    const actions: string[] = [];
     if (p.flags.mobility) actions.push('Provide seating support');
     if (p.flags.sensory) actions.push('Offer quieter space');
     if (p.flags.alone) actions.push('Support staff check-in');
     if (p.flags.chronicPain) actions.push('Check comfort while waiting');
     if (p.flags.cognitive) actions.push('Use simplified communication');
     if (p.flags.language) actions.push('Offer translation if needed');
-    if (highBurden && postMedian) actions.push('Immediate accessibility check');
-    else if (highBurden || postMedian) actions.push('Proactive accessibility check');
-    if (p.checkIns.some((c) => c.planningToLeave)) actions.push('Confirm patient intends to stay');
+    if (highBurden || pastTrigger) actions.push('Proactive accessibility check');
+    if (planningToLeave) actions.push('Confirm patient intends to stay');
     if (actions.length === 0) actions.push('Routine check-in recommended');
 
     return actions.join(' • ');

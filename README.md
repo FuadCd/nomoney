@@ -36,7 +36,7 @@ nomoney/
 - **Routes**:
   - `/patient` — Patient Accessibility Intake
   - `/staff` — Staff Real-Time Burden Dashboard
-  - `/admin` — Administrator Equity Simulator
+  - `/admin` — Admin Dashboard (Model Health & Equity Overview, read-only)
 
 ---
 
@@ -106,13 +106,18 @@ docker-compose up --build
 
 Update `snapshotTakenAt` and `waitMinutes` / `lwbsRate` before demos as data changes.
 
+### Vulnerability Weights (StatsCan)
+
+`backend/src/burden-modeling/vulnerabilityWeights.ts` — Source: [Statistics Canada – Disability in Canada (2024)](https://www150.statcan.gc.ca/n1/pub/89-654-x/89-654-x2024001-eng.htm). Weights reflect relative burden impact (not raw prevalence): chronicPain 0.25, mobility 0.20, cognitive 0.15, sensory 0.15, language 0.10, alone 0.10. Pass `profile: { chronicPain?: boolean; ... }` in burden compute; when provided, `vulnerabilityMultiplier` is derived from profile (0 → ~0.95). Otherwise use `vulnerabilityMultiplier` directly.
+
 ### Model Constants
 
 `backend/src/burden-modeling/modelConstants.ts`:
 
 - **MEDIAN_TOTAL_STAY_MINUTES** = 238 (CIHI NACRS Alberta 2024–25)
 - **MEDIAN_TO_PHYSICIAN_MINUTES** = 90
-- **MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES** = 87 — McMaster median time-to-physician among triage-matched controls; used as reference for “beyond median physician access” and gradual escalation. Source: published ED LWBS study.
+- **MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES** = 87 — McMaster median time-to-physician; reference for gradual escalation. Source: published ED LWBS study.
+- **MEDIAN_LWBS_TRIGGER_MINUTES** = 87 — Gate for disengagement warning (show only when waited this long or planning to leave or burden ≥ 70).
 
 ### Burden Calculation
 
@@ -127,20 +132,43 @@ Update `snapshotTakenAt` and `waitMinutes` / `lwbsRate` before demos as data cha
 
 3. **LWBS integration (HQCA)** — Environment-level disengagement:
    - `computeLeaveSignalWeight(hospitalKey)` normalizes LWBS around 5% baseline
-   - High-LWBS hospitals scale disengagement sensitivity up
-   - If `intendsToStay === false` in check-in: `burden += 15 * leaveSignalWeight`
+   - If `intendsToStay === false`: `burden += 15 * leaveSignalWeight`
 
-4. **Alert status** — `RED` if burden > 75 or planning to leave; `AMBER` if burden > 50; else `GREEN`
+4. **Vulnerability scaling (StatsCan)** — `burden *= (1 + vulnerabilityMultiplier)` when using profile-derived multiplier.
 
-5. **Amber check-in suggestion** — `suggestAmberCheckIn: true` when `minutesWaited > 87` and `burden >= 55` (extended wait beyond typical physician access → suggest staff touchpoint)
+5. **Alert status** — `RED` if burden > 75 or planning to leave; `AMBER` if burden > 50; else `GREEN`.
 
-6. **Burden API response** — `burden`, `alertStatus`, `suggestAmberCheckIn`, `burdenCurve`, `equityGapScore`, `baselineCurve`
+6. **Amber check-in suggestion** — `suggestAmberCheckIn: true` when `minutesWaited > 87` and `burden >= 55`.
 
-### Frontend Lib (source of truth for display)
+7. **Disengagement gating (backend)** — `disengagementWindowMinutes` returned only when: `planningToLeave` OR `burden >= 70` OR `minutesWaited >= 87` OR `minutesWaited / expectedWaitMinutes >= 0.30`.
+
+8. **Burden API response** — `burden`, `alertStatus`, `suggestAmberCheckIn`, `disengagementWindowMinutes`, `burdenCurve`, `equityGapScore`, `baselineCurve`
+
+### Admin Dashboard
+
+Read-only view computed from frontend `PatientStoreService` (same data as Staff). No backend endpoint.
+
+- **Model Health** — Alert distribution (% Green/Amber/Red), average burden (30–55 normal, 70+ strain), missed check-in rate.
+- **Equity Overview** — Average burden by flag (mobility, chronicPain, sensory, cognitive, language, alone) and % Red by flag.
+- **Footer** — Model anchors from `modelConstants.ts` and `vulnerabilityWeights.ts`: CIHI medians (238 min total, 90 min to physician), McMaster early risk (87 min), LWBS source (HQCA), weights source (Statistics Canada).
+
+**Safety** — Admin cannot change thresholds, weights, patients, LWBS scaling, or triage.
+
+### Staff Dashboard UI Logic
+
+**Missed check-in** — Last check-in > 20 min ago (`CHECK_IN_INTERVAL_MS`). Shown as orange badge.
+
+**Disengagement warning** — Shown only when any of: `minutesWaited >= 87` OR `intendsToStay === false` OR `burden >= 70` OR **credible risk pattern**: `missedCheckIn` AND `minutesWaited > 87` AND `burden > 55` (patient stopped engaging + past early-risk window + elevated burden).
+
+**Suggested actions** — Credible risk pattern → "Immediate staff outreach — credible disengagement risk"; otherwise `minutesWaited < 87` and intends to stay → "Accessibility check (optional)"; else flag-based actions.
+
+### Frontend Lib
 
 - `frontend/src/lib/model/modelConstants.ts` — CIHI + McMaster constants
+- `frontend/src/lib/model/vulnerabilityWeights.ts` — StatsCan-informed weights
 - `frontend/src/lib/data/albertaERs.ts` — Alberta hospital list (AHS, HQCA)
 - `frontend/src/lib/model/burden.ts` — `shouldSuggestAmberCheckIn(minutesWaited, burden)`
+- `frontend/src/app/core/services/admin-summary.service.ts` — Computes admin summary from PatientStore (alert distribution, avg burden, equity by flag)
 
 ---
 
@@ -152,7 +180,7 @@ AccessER does **not** diagnose, prioritize treatment, or provide medical advice.
 |-------|---------|
 | **Patient** | Accessibility intake, burden curves, 20-min check-ins |
 | **Staff** | Queue Equity View, risk indicators, suggested actions |
-| **Admin** | Intervention sliders, equity gap simulation |
+| **Admin** | Model health & equity overview — observation only (no thresholds, weights, or patient overrides) |
 
 ---
 

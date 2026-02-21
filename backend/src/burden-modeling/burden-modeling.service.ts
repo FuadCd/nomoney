@@ -5,6 +5,7 @@ import {
   MEDIAN_TOTAL_STAY_MINUTES,
   MEDIAN_TO_PHYSICIAN_MINUTES,
   MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES,
+  MEDIAN_LWBS_TRIGGER_MINUTES,
 } from './modelConstants';
 import { VULNERABILITY_WEIGHTS } from './vulnerabilityWeights';
 import { EstimatedWaitDto } from './dto/estimated-wait.dto';
@@ -84,7 +85,16 @@ export class BurdenModelingService {
     const alertStatus =
       burden > 75 || planningToLeave ? 'RED' : burden > 50 ? 'AMBER' : 'GREEN';
 
-    const atDisengagementRisk = planningToLeave || burden >= 50;
+    const hospital = this.waitTimesService.getHospitalWaitTime(dto.facilityId);
+    const expectedWaitMinutes = hospital?.waitMinutes ?? 238;
+    const waitRatio = dto.waitTimeMinutes / expectedWaitMinutes;
+
+    const atDisengagementRisk =
+      planningToLeave ||
+      burden >= 70 ||
+      dto.waitTimeMinutes >= MEDIAN_LWBS_TRIGGER_MINUTES ||
+      waitRatio >= 0.3;
+
     const disengagementWindowMinutes = atDisengagementRisk
       ? this.computeDisengagementWindowMinutes(
           points,
@@ -108,8 +118,7 @@ export class BurdenModelingService {
   }
 
   /**
-   * Minutes from now until LWBS probability crosses threshold (curve-based).
-   * Used for "Expected to leave in X minutes" on staff dashboard.
+   * Curve-based window; displayed as "~30–60 min" range, not a point estimate.
    */
   private computeDisengagementWindowMinutes(
     points: BurdenCurvePoint[],
@@ -148,6 +157,19 @@ export class BurdenModelingService {
 
     const clamped = Math.round(Math.max(15, Math.min(600, estimated)));
     return { estimatedWaitMinutes: clamped };
+  }
+
+  /** +0 to +10 gradual bump after 87 min (McMaster triage-matched control median) */
+  private applyPostMedianPhysicianDelayAdjustment(
+    burden: number,
+    minutesWaited: number,
+  ): number {
+    if (minutesWaited <= MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES)
+      return burden;
+    const over =
+      minutesWaited - MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES;
+    const bump = Math.min(over * 0.1, 10);
+    return burden + bump;
   }
 
   /** CIHI-anchored: 0 min → 0, 238 min → ~60, acceleration after 90 min */

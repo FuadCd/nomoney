@@ -20,3 +20,6 @@ export const MEDIAN_TO_PHYSICIAN_MINUTES = 90;
  * Source: published ED LWBS study.
  */
 export const MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES = 87;
+
+/** Gate for disengagement warning — only show when waited this long or planning to leave or burden ≥ 70. */
+export const MEDIAN_LWBS_TRIGGER_MINUTES = 87;
