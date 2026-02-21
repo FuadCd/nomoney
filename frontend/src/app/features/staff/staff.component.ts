@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { AsyncPipe, DecimalPipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipModule } from '@angular/material/chip';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -25,7 +25,7 @@ const MEDIAN_PHYSICIAN_MINUTES = 87;
     DecimalPipe,
     MatCardModule,
     MatButtonModule,
-    MatChipModule,
+    MatChipsModule,
     MatIconModule,
     MatTableModule,
     MatTooltipModule,

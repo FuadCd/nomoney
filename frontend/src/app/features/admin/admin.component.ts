@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AsyncPipe, DecimalPipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
-import { MatChipModule } from '@angular/material/chip';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -33,7 +33,7 @@ const EQUITY_LABELS: Record<EquityFlagKey, string> = {
     AsyncPipe,
     DecimalPipe,
     MatCardModule,
-    MatChipModule,
+    MatChipsModule,
     MatIconModule,
     MatTableModule,
     MatProgressBarModule,

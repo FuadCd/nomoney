@@ -73,11 +73,11 @@ export interface NavItem {
                 <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
                 @if (sidebarOpen) {
                   <span matListItemTitle>{{ item.label }}</span>
-                  @if (item.badge !== undefined && item.badge > 0) {
-                    <span matListItemMeta>
-                      <mat-chip class="badge-chip">{{ item.badge }}</mat-chip>
-                    </span>
-                  }
+                }
+                @if (sidebarOpen && item.badge !== undefined && item.badge > 0) {
+                  <span matListItemMeta>
+                    <mat-chip class="badge-chip">{{ item.badge }}</mat-chip>
+                  </span>
                 }
               </a>
             }

@@ -19,6 +19,9 @@ export interface AdminSummary {
   totalPatients: number;
   avgBurden: number;
   alertDistribution: {
+    green: number;
+    amber: number;
+    red: number;
     greenPercent: number;
     amberPercent: number;
     redPercent: number;
@@ -57,6 +60,9 @@ export class AdminSummaryService {
     const red = patients.filter((p) => toAlertStatusUpper(p.alertLevel) === 'RED').length;
 
     const alertDistribution = {
+      green,
+      amber,
+      red,
       greenPercent: total ? Math.round((green / total) * 100) : 0,
       amberPercent: total ? Math.round((amber / total) * 100) : 0,
       redPercent: total ? Math.round((red / total) * 100) : 0,

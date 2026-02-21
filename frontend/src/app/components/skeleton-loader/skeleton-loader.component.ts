@@ -18,9 +18,9 @@ import { CommonModule } from '@angular/common';
         </div>
       } @else if (type === 'table') {
         <div class="skeleton-table">
-          @for (row of rows; track $index) {
+          @for (row of rowsArray; track $index) {
             <div class="skeleton-table-row">
-              @for (col of columns; track $index) {
+              @for (col of columnsArray; track $index) {
                 <div class="skeleton-table-cell" [style.width.%]="100 / columns"></div>
               }
             </div>
@@ -108,4 +108,11 @@ export class SkeletonLoaderComponent {
   @Input() fullWidth: boolean = false;
   @Input() rows: number = 5;
   @Input() columns: number = 4;
+
+  get rowsArray(): number[] {
+    return Array.from({ length: this.rows }, (_, i) => i);
+  }
+  get columnsArray(): number[] {
+    return Array.from({ length: this.columns }, (_, i) => i);
+  }
 }
