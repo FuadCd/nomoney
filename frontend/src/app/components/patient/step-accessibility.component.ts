@@ -1,14 +1,32 @@
 import { Component, output, signal, inject } from '@angular/core';
 import { I18nService, IntakeAccessibilityProfile } from '../../features/patient/patient.component';
 
+/** Internal answer keys — sensory and cognitive each have two sub-questions */
+type AnswerKey =
+  | 'mobility'
+  | 'chronicPain'
+  | 'sensory1'
+  | 'sensory2'
+  | 'cognitive1'
+  | 'cognitive2'
+  | 'language'
+  | 'supportPerson';
+
+interface Question {
+  category: string; // i18n key for the category label
+  key: string; // i18n key for the question text
+  field: AnswerKey;
+}
+
 @Component({
   selector: 'app-step-accessibility',
   standalone: true,
   template: `
     <div class="step">
       <p class="intro">{{ i18n.t('accessibilityIntro') }}</p>
-      <p class="q-count">{{ i18n.t('questionXof6', { n: (currentQ() + 1).toString() }) }}</p>
+      <p class="q-count">{{ i18n.t('questionXof8', { n: (currentQ() + 1).toString() }) }}</p>
 
+      <p class="category-label">{{ i18n.t(questions[currentQ()].category) }}</p>
       <h2 class="question">{{ i18n.t(questions[currentQ()].key) }}</h2>
 
       <div class="yn-buttons">
@@ -40,6 +58,16 @@ import { I18nService, IntakeAccessibilityProfile } from '../../features/patient/
         color: var(--p-accent, #0d47a1);
         margin: 0;
         font-size: 0.9rem;
+      }
+      .category-label {
+        text-align: center;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        color: var(--p-accent, #0d47a1);
+        margin: 0;
+        opacity: 0.8;
       }
       .question {
         font-size: 1.3rem;
@@ -87,28 +115,31 @@ export class StepAccessibilityComponent {
   readonly i18n = inject(I18nService);
   readonly currentQ = signal(0);
 
-  readonly questions: { key: string; field: keyof IntakeAccessibilityProfile }[] = [
-    { key: 'q_mobility', field: 'mobility' },
-    { key: 'q_sensory', field: 'sensory' },
-    { key: 'q_chronicPain', field: 'chronicPain' },
-    { key: 'q_cognitive', field: 'cognitive' },
-    { key: 'q_language', field: 'language' },
-    { key: 'q_support', field: 'supportPerson' },
+  readonly questions: Question[] = [
+    { category: 'catMobility', key: 'q_mobility', field: 'mobility' },
+    { category: 'catChronicPain', key: 'q_chronicPain', field: 'chronicPain' },
+    { category: 'catSensory', key: 'q_sensory1', field: 'sensory1' },
+    { category: 'catSensory', key: 'q_sensory2', field: 'sensory2' },
+    { category: 'catCognitive', key: 'q_cognitive1', field: 'cognitive1' },
+    { category: 'catCognitive', key: 'q_cognitive2', field: 'cognitive2' },
+    { category: 'catLanguage', key: 'q_language', field: 'language' },
+    { category: 'catSupport', key: 'q_support', field: 'supportPerson' },
   ];
 
-  private answers: Partial<Record<keyof IntakeAccessibilityProfile, boolean>> = {};
+  private answers: Partial<Record<AnswerKey, boolean>> = {};
 
   answer(value: boolean): void {
     const q = this.questions[this.currentQ()];
     this.answers[q.field] = value;
-    if (this.currentQ() < 5) {
+    if (this.currentQ() < this.questions.length - 1) {
       this.currentQ.update((v) => v + 1);
     } else {
+      // Merge: sensory = sensory1 OR sensory2, cognitive = cognitive1 OR cognitive2
       this.completed.emit({
         mobility: this.answers['mobility'] ?? false,
-        sensory: this.answers['sensory'] ?? false,
         chronicPain: this.answers['chronicPain'] ?? false,
-        cognitive: this.answers['cognitive'] ?? false,
+        sensory: (this.answers['sensory1'] ?? false) || (this.answers['sensory2'] ?? false),
+        cognitive: (this.answers['cognitive1'] ?? false) || (this.answers['cognitive2'] ?? false),
         language: this.answers['language'] ?? false,
         supportPerson: this.answers['supportPerson'] ?? false,
       });
