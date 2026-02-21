@@ -21,31 +21,50 @@ export class BurdenModelingService {
 
     const hospital = this.waitTimesService.getHospitalWaitTime(dto.facilityId);
     const expectedWait = hospital?.waitMinutes ?? 180;
+    const leaveSignalWeight =
+      this.waitTimesService.computeLeaveSignalWeight(dto.facilityId);
+
+    const planningToLeave = dto.checkInResponses?.some(
+      (r) => r.intendsToStay === false,
+    );
 
     for (let t = 0; t <= maxTime; t += 5) {
-      const baseWaitingImpact = Math.min(
-        (t / expectedWait) * 50,
-        60,
-      );
+      const baseWaitingImpact = Math.min((t / expectedWait) * 50, 60);
       const baselineHazard = this.baselineHazard(t, dto.estimatedCtasLevel);
-      const risk =
+      let risk =
         baselineHazard *
         dto.vulnerabilityMultiplier *
         (1 + baseWaitingImpact / 100);
 
+      // Scale LWBS curve by environment-level disengagement context
+      const lwbsRisk = risk * leaveSignalWeight;
+
       points.push({
         timeMinutes: t,
         distressProbability: Math.min(0.95, this.distressCurve(t, risk)),
-        lwbsProbability: Math.min(0.95, this.lwbsCurve(t, risk)),
+        lwbsProbability: Math.min(0.95, this.lwbsCurve(t, lwbsRisk)),
         returnVisitRisk: Math.min(0.8, this.returnVisitCurve(t, risk)),
       });
     }
 
-    const equityGapScore = this.computeEquityGap(points, dto.vulnerabilityMultiplier);
+    let burden = this.computeBurdenScore(points, dto);
+
+    if (planningToLeave) {
+      burden += 15 * leaveSignalWeight;
+    }
+
+    const equityGapScore = this.computeEquityGap(
+      points,
+      dto.vulnerabilityMultiplier,
+    );
+    const alertStatus =
+      burden > 75 || planningToLeave ? 'RED' : burden > 50 ? 'AMBER' : 'GREEN';
 
     return {
       burdenCurve: points,
       equityGapScore,
+      burden,
+      alertStatus,
       baselineCurve: points.map((p) => ({
         timeMinutes: p.timeMinutes,
         distressProbability: p.distressProbability / dto.vulnerabilityMultiplier,
@@ -53,6 +72,19 @@ export class BurdenModelingService {
       })),
       confidenceInterval: 0.95,
     };
+  }
+
+  private computeBurdenScore(
+    points: BurdenCurvePoint[],
+    dto: ComputeBurdenDto,
+  ): number {
+    const lastPoint = points[points.length - 1];
+    if (!lastPoint) return 0;
+    const base =
+      lastPoint.distressProbability * 30 +
+      lastPoint.lwbsProbability * 40 +
+      lastPoint.returnVisitRisk * 20;
+    return Math.min(100, base * dto.vulnerabilityMultiplier);
   }
 
   private baselineHazard(timeMinutes: number, ctasLevel: number): number {
