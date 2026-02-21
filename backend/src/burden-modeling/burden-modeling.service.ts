@@ -150,6 +150,22 @@ export class BurdenModelingService {
     return { estimatedWaitMinutes: clamped };
   }
 
+  /**
+   * Post-87 min gradual escalation (McMaster reference).
+   * Adds burden when wait time exceeds median time-to-physician.
+   */
+  private applyPostMedianPhysicianDelayAdjustment(
+    burden: number,
+    waitTimeMinutes: number,
+  ): number {
+    if (waitTimeMinutes <= MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES) {
+      return burden;
+    }
+    const excess = waitTimeMinutes - MCM_MASTER_MEDIAN_TIME_TO_PHYSICIAN_MINUTES;
+    const adjustment = Math.min(15, excess * 0.15);
+    return burden + adjustment;
+  }
+
   /** CIHI-anchored: 0 min → 0, 238 min → ~60, acceleration after 90 min */
   private computeBaseWaitingImpact(minutesWaited: number): number {
     const normalized = minutesWaited / MEDIAN_TOTAL_STAY_MINUTES;

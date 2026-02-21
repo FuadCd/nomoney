@@ -20,7 +20,7 @@ export interface VulnerabilityProfile {
 
 export interface ComputeBurdenInput {
   facilityId: string;
-  vulnerabilityMultiplier?: number;
+  vulnerabilityMultiplier: number;
   profile?: VulnerabilityProfile;
   estimatedCtasLevel: number;
   waitTimeMinutes: number;
@@ -50,13 +50,11 @@ export class BurdenModelingService {
   computeBurden(input: ComputeBurdenInput): Observable<{
     burdenCurve: BurdenCurvePoint[];
     equityGapScore: number;
-    burden: number;
-    alertStatus: string;
-    suggestAmberCheckIn: boolean;
-    baselineCurve: unknown[];
-    confidenceInterval: number;
     burden?: number;
     alertStatus?: 'GREEN' | 'AMBER' | 'RED';
+    suggestAmberCheckIn?: boolean;
+    baselineCurve: unknown[];
+    confidenceInterval: number;
     disengagementWindowMinutes?: number;
   }> {
     return this.api.post('/burden-modeling/compute', input);

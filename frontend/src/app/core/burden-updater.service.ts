@@ -51,10 +51,11 @@ export class BurdenUpdaterService implements OnDestroy {
           .subscribe({
             next: (res) => {
               if (res.burden != null && res.alertStatus) {
+                const status = res.alertStatus as 'GREEN' | 'AMBER' | 'RED';
                 this.store.setBurdenFromBackend(
                   p.id,
                   res.burden,
-                  res.alertStatus,
+                  status,
                   res.burdenCurve,
                   res.disengagementWindowMinutes
                 );
