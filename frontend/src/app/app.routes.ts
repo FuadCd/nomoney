@@ -15,6 +15,7 @@ export const routes: Routes = [
     title: 'Patient Intake | AccessER',
     children: [
       { path: '', redirectTo: 'intake/1', pathMatch: 'full' },
+      // Intake steps: 1=context & risk (hospital, discomfort, leaving), 2=accessibility toggles, 3=confirm
       {
         path: 'intake',
         redirectTo: 'intake/1',

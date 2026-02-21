@@ -20,6 +20,7 @@
   "languageLabel": "Langue",
   "confirmButton": "Confirmer et s'enregistrer",
   "waitingTitle": "Vous êtes enregistré !",
+  "waitingTimeLabel": "Attente estimée",
   "waitingTime": "Attente estimée : ~15 minutes",
   "waitingMessage": "Nous reviendrons bientôt vers vous",
   "passportTitle": "Votre Passeport d'Accessibilité",

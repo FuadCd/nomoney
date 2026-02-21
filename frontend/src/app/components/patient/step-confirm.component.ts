@@ -4,6 +4,16 @@ import { I18nService, IntakeAccessibilityProfile } from '../../features/patient/
 import { PatientStoreService } from '../../core/patient-store.service';
 import { Patient } from '../../models/patient.model';
 
+/** Vulnerability weights per spec (sum = vulnerabilityMultiplier - 1). */
+const VULN_WEIGHTS: Record<keyof IntakeAccessibilityProfile, number> = {
+  chronicPain: 0.25,
+  mobility: 0.2,
+  sensory: 0.15,
+  cognitive: 0.15,
+  alone: 0.1,
+  language: 0.1,
+};
+
 @Component({
   selector: 'app-step-confirm',
   standalone: true,
@@ -115,8 +125,8 @@ import { Patient } from '../../models/patient.model';
   ],
 })
 export class StepConfirmComponent {
-  readonly complaint = input.required<string>();
-  readonly severity = input.required<number>();
+  readonly hospitalKey = input.required<string>();
+  readonly discomfortLevel = input.required<number>();
   readonly accessibilityProfile = input.required<IntakeAccessibilityProfile>();
   readonly anonymousId = input.required<string>();
 
@@ -128,12 +138,12 @@ export class StepConfirmComponent {
   readonly topIcons = computed(() => {
     const profile = this.accessibilityProfile();
     const map: [keyof IntakeAccessibilityProfile, string][] = [
+      ['chronicPain', '💊'],
       ['mobility', '♿'],
       ['sensory', '🔇'],
-      ['chronicPain', '💊'],
       ['cognitive', '🔍'],
-      ['language', '🤫'],
-      ['supportPerson', '🤝'],
+      ['alone', '👤'],
+      ['language', '🌐'],
     ];
     return map
       .filter(([k]) => profile[k])
@@ -142,7 +152,7 @@ export class StepConfirmComponent {
   });
 
   readonly urgencyText = computed(() => {
-    const s = this.severity();
+    const s = this.discomfortLevel();
     if (s <= 2) return this.i18n.t('urgencyLow');
     if (s <= 3) return this.i18n.t('urgencyMedium');
     if (s <= 4) return this.i18n.t('urgencyHigh');
@@ -152,13 +162,18 @@ export class StepConfirmComponent {
   onConfirm(): void {
     this.loading.set(true);
     const profile = this.accessibilityProfile();
-    const flagCount = Object.values(profile).filter(Boolean).length;
-    const vulnScore = Math.min((this.severity() / 5) * 0.5 + (flagCount / 6) * 0.5, 1);
+    const vulnerabilityScore = Object.entries(VULN_WEIGHTS).reduce(
+      (sum, [k, w]) => sum + (profile[k as keyof IntakeAccessibilityProfile] ? w : 0),
+      0
+    );
+    const discomfortLevel = this.discomfortLevel();
+    const estimatedCtasLevel = Math.min(5, Math.max(1, 6 - discomfortLevel));
+    const assignedHospitalKey = this.hospitalKey() || 'uofa';
 
     const patient: Patient = {
       id: this.anonymousId(),
       waitStart: Date.now(),
-      vulnerabilityScore: +vulnScore.toFixed(2),
+      vulnerabilityScore: +Math.min(vulnerabilityScore, 1).toFixed(2),
       burdenIndex: 0,
       alertLevel: 'green',
       flags: {
@@ -167,12 +182,18 @@ export class StepConfirmComponent {
         sensory: profile.sensory,
         cognitive: profile.cognitive,
         chronicPain: profile.chronicPain,
+        alone: profile.alone,
       },
       checkIns: [],
+      assignedHospitalKey,
+      estimatedCtasLevel,
+      discomfortLevel,
     };
 
     this.store.addPatient(patient);
-    // Brief delay for spinner UX
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('patient_hospital_key', assignedHospitalKey);
+    }
     setTimeout(() => this.router.navigate(['/patient/waiting']), 600);
   }
 }

@@ -5,6 +5,7 @@ import {
   MEDIAN_TOTAL_STAY_MINUTES,
   MEDIAN_TO_PHYSICIAN_MINUTES,
 } from './modelConstants';
+import { EstimatedWaitDto } from './dto/estimated-wait.dto';
 
 export interface BurdenCurvePoint {
   timeMinutes: number;
@@ -62,11 +63,20 @@ export class BurdenModelingService {
     const alertStatus =
       burden > 75 || planningToLeave ? 'RED' : burden > 50 ? 'AMBER' : 'GREEN';
 
+    const atDisengagementRisk = planningToLeave || burden >= 50;
+    const disengagementWindowMinutes = atDisengagementRisk
+      ? this.computeDisengagementWindowMinutes(
+          points,
+          dto.waitTimeMinutes,
+        )
+      : undefined;
+
     return {
       burdenCurve: points,
       equityGapScore,
       burden,
       alertStatus,
+      disengagementWindowMinutes,
       baselineCurve: points.map((p) => ({
         timeMinutes: p.timeMinutes,
         distressProbability: p.distressProbability / dto.vulnerabilityMultiplier,
@@ -74,6 +84,49 @@ export class BurdenModelingService {
       })),
       confidenceInterval: 0.95,
     };
+  }
+
+  /**
+   * Minutes from now until LWBS probability crosses threshold (curve-based).
+   * Used for "Expected to leave in X minutes" on staff dashboard.
+   */
+  private computeDisengagementWindowMinutes(
+    points: BurdenCurvePoint[],
+    waitTimeMinutes: number,
+  ): number {
+    const LWBS_THRESHOLD = 0.5;
+    const MIN_MINUTES = 5;
+    const MAX_MINUTES = 60;
+    const DEFAULT_MINUTES = 20;
+
+    const point = points.find((p) => p.lwbsProbability >= LWBS_THRESHOLD);
+    if (!point) return DEFAULT_MINUTES;
+    const minutesFromNow = point.timeMinutes - waitTimeMinutes;
+    if (minutesFromNow <= 0) return MIN_MINUTES;
+    return Math.round(Math.max(MIN_MINUTES, Math.min(MAX_MINUTES, minutesFromNow)));
+  }
+
+  /**
+   * Estimated wait in minutes for display after signup.
+   * Uses: hospital baseline, waiting impact vs median, 90-min threshold, vulnerability.
+   * LWBS is not included (check-in only).
+   */
+  getEstimatedWaitMinutes(dto: EstimatedWaitDto): { estimatedWaitMinutes: number } {
+    const hospital = this.waitTimesService.getHospitalWaitTime(dto.facilityId);
+    const baseWait = hospital?.waitMinutes ?? 180;
+
+    // Scale base wait: vulnerability reduces displayed wait (equity prioritization)
+    const vulnerabilityFactor = 1 / Math.max(0.5, Math.min(2, dto.vulnerabilityMultiplier));
+    let estimated = baseWait * vulnerabilityFactor;
+
+    // After 90 min, show remaining-style estimate: reduce by time already waited
+    if (dto.waitTimeMinutes > MEDIAN_TO_PHYSICIAN_MINUTES) {
+      const remaining = Math.max(0, baseWait - dto.waitTimeMinutes);
+      estimated = remaining * vulnerabilityFactor;
+    }
+
+    const clamped = Math.round(Math.max(15, Math.min(600, estimated)));
+    return { estimatedWaitMinutes: clamped };
   }
 
   /** CIHI-anchored: 0 min → 0, 238 min → ~60, acceleration after 90 min */

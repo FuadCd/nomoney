@@ -134,14 +134,14 @@ export class StepAccessibilityComponent {
     if (this.currentQ() < this.questions.length - 1) {
       this.currentQ.update((v) => v + 1);
     } else {
-      // Merge: sensory = sensory1 OR sensory2, cognitive = cognitive1 OR cognitive2
+      // Merge: sensory = sensory1 OR sensory2, cognitive = cognitive1 OR cognitive2; alone = no support person
       this.completed.emit({
         mobility: this.answers['mobility'] ?? false,
         chronicPain: this.answers['chronicPain'] ?? false,
         sensory: (this.answers['sensory1'] ?? false) || (this.answers['sensory2'] ?? false),
         cognitive: (this.answers['cognitive1'] ?? false) || (this.answers['cognitive2'] ?? false),
         language: this.answers['language'] ?? false,
-        supportPerson: this.answers['supportPerson'] ?? false,
+        alone: !(this.answers['supportPerson'] ?? false),
       });
     }
   }

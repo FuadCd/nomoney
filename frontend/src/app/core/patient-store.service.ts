@@ -110,6 +110,37 @@ export class PatientStoreService {
     this.updateBurden(patientId);
   }
 
+  /**
+   * Apply burden from backend (wait times, LWBS, CIHI/90-min, vulnerability).
+   * Used when patient has assignedHospitalKey and burden-modeling API was called.
+   */
+  setBurdenFromBackend(
+    patientId: string,
+    burden: number,
+    alertStatus: 'GREEN' | 'AMBER' | 'RED',
+    curve?: BurdenCurvePoint[],
+    disengagementWindowMinutes?: number
+  ): void {
+    const patient = this.getSnapshot().find((p) => p.id === patientId);
+    if (!patient) return;
+
+    const now = this.getCurrentTime();
+    patient.burdenIndex = Math.min(burden, 100);
+    patient.alertLevel = alertStatus.toLowerCase() as AlertLevel;
+    patient.disengagementWindowMinutes = disengagementWindowMinutes;
+
+    if (patient.checkIns.length > 0) {
+      const lastTs = patient.checkIns[patient.checkIns.length - 1].timestamp;
+      patient.missedCheckIn = now - lastTs > CHECK_IN_INTERVAL_MS;
+    } else {
+      patient.missedCheckIn = false;
+    }
+
+    if (curve?.length) this.burdenCurves.set(patientId, curve);
+    this.log('setBurdenFromBackend', { patientId, burdenIndex: patient.burdenIndex, alertLevel: patient.alertLevel });
+    this.updatePatient(patient);
+  }
+
   applyIntervention(patientId: string) {
     const patient = this.getSnapshot().find((p) => p.id === patientId);
     if (!patient) return;
@@ -167,69 +198,6 @@ export class PatientStoreService {
     if (this.logActions && typeof console !== 'undefined' && console.log) {
       console.log('[PatientStore]', action, payload ?? '');
     }
-  }
-
-  // ===== Demo data =====
-  seedDemoPatients(): void {
-    const now = this.getCurrentTime();
-    const baseTime = now - 45 * 60 * 1000;
-    const demo: Patient[] = [
-      {
-        id: 'demo-1',
-        waitStart: baseTime,
-        vulnerabilityScore: 0.3,
-        burdenIndex: 0,
-        alertLevel: 'green',
-        flags: {
-          mobility: false,
-          language: false,
-          sensory: true,
-          cognitive: false,
-          chronicPain: false,
-        },
-        checkIns: [],
-      },
-      {
-        id: 'demo-2',
-        waitStart: baseTime - 30 * 60 * 1000,
-        vulnerabilityScore: 0.7,
-        burdenIndex: 0,
-        alertLevel: 'green',
-        flags: {
-          mobility: true,
-          language: false,
-          sensory: false,
-          cognitive: false,
-          chronicPain: true,
-        },
-        checkIns: [
-          {
-            discomfort: 3,
-            needsHelp: false,
-            planningToLeave: false,
-            timestamp: baseTime + 10 * 60 * 1000,
-          },
-        ],
-      },
-      {
-        id: 'demo-3',
-        waitStart: baseTime - 90 * 60 * 1000,
-        vulnerabilityScore: 0.5,
-        burdenIndex: 0,
-        alertLevel: 'green',
-        flags: {
-          mobility: false,
-          language: true,
-          sensory: false,
-          cognitive: true,
-          chronicPain: false,
-        },
-        checkIns: [],
-      },
-    ];
-    this.log('seedDemoPatients', { count: demo.length });
-    this.patients$.next(demo);
-    demo.forEach((p) => this.updateBurden(p.id));
   }
 
   clearDemoTime(): void {

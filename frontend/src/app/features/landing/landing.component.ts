@@ -14,12 +14,12 @@ import { AuthService } from '../../core/auth/auth.service';
         <p class="tagline">Accessibility-Adjusted Emergency Room Burden</p>
 
         <div class="staff-entry">
-          <label for="hospital-code">Hospital code</label>
           <input
             id="hospital-code"
             type="text"
             [(ngModel)]="hospitalCode"
             placeholder="Hospital Code"
+            aria-label="Hospital code"
             (keydown.enter)="submitCode()"
           />
           <button type="button" class="btn-primary" (click)="submitCode()">
