@@ -18,16 +18,16 @@ const EQUITY_LABELS: Record<EquityFlagKey, string> = {
   standalone: true,
   imports: [AsyncPipe],
   template: `
-    <div class="min-h-screen bg-gray-50">
+    <div class="admin-page min-h-screen bg-gray-50">
       <!-- Header -->
       <div class="bg-white border-b shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 py-4">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
+        <div class="admin-header-inner">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
               <button
                 type="button"
                 (click)="goBack()"
-                class="p-2 -ml-2 rounded hover:bg-gray-100"
+                class="admin-tap-target p-2 -ml-2 rounded hover:bg-gray-100"
                 aria-label="Back to Staff"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -38,13 +38,13 @@ const EQUITY_LABELS: Record<EquityFlagKey, string> = {
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
                 </svg>
-                <div>
-                  <h1 class="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                <div class="min-w-0">
+                  <h1 class="admin-title text-lg sm:text-2xl font-bold text-gray-900">Admin Dashboard</h1>
                   <p class="text-sm text-gray-600">Model Health & Equity Overview</p>
                 </div>
               </div>
             </div>
-            <span class="px-2 py-1 text-xs font-medium border border-gray-300 rounded">
+            <span class="px-2 py-1 text-xs font-medium border border-gray-300 rounded shrink-0">
               Read-only
             </span>
           </div>
@@ -52,7 +52,7 @@ const EQUITY_LABELS: Record<EquityFlagKey, string> = {
       </div>
 
       <!-- Main Content -->
-      <div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <div class="admin-main space-y-6">
         @if (summary$ | async; as s) {
           <!-- Model Health -->
           <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -224,6 +224,26 @@ const EQUITY_LABELS: Record<EquityFlagKey, string> = {
       </div>
     </div>
   `,
+  styles: [
+    `
+      .admin-page { padding-left: env(safe-area-inset-left, 0); padding-right: env(safe-area-inset-right, 0); padding-bottom: env(safe-area-inset-bottom, 0); }
+      .admin-header-inner {
+        max-width: 80rem;
+        margin: 0 auto;
+        padding: 1rem calc(1rem + env(safe-area-inset-right, 0)) 1rem calc(1rem + env(safe-area-inset-left, 0));
+        padding-top: calc(1rem + env(safe-area-inset-top, 0));
+      }
+      .admin-main {
+        max-width: 80rem;
+        margin: 0 auto;
+        padding: 1rem calc(1rem + env(safe-area-inset-right, 0)) calc(1.5rem + env(safe-area-inset-bottom, 0)) calc(1rem + env(safe-area-inset-left, 0));
+      }
+      @media (min-width: 640px) {
+        .admin-header-inner, .admin-main { padding-left: 1.5rem; padding-right: 1.5rem; }
+      }
+      .admin-tap-target { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
+    `,
+  ],
 })
 export class AdminComponent {
   private router = inject(Router);

@@ -45,7 +45,13 @@ import { HOSPITAL_WAIT_MINUTES } from '../../../core/constants/hospital-wait-min
   `,
   styles: [
     `
-      .waiting { max-width: 672px; margin: 0 auto; }
+      .waiting {
+        max-width: 672px;
+        margin: 0 auto;
+        padding-left: env(safe-area-inset-left, 0);
+        padding-right: env(safe-area-inset-right, 0);
+        padding-bottom: env(safe-area-inset-bottom, 0);
+      }
       .back-link {
         display: inline-block;
         color: var(--p-accent, #2563eb);
@@ -53,7 +59,12 @@ import { HOSPITAL_WAIT_MINUTES } from '../../../core/constants/hospital-wait-min
         font-size: 0.875rem;
       }
       .back-link:hover { text-decoration: underline; }
-      .back-btn { background: none; border: none; padding: 0; font: inherit; cursor: pointer; }
+      .back-btn {
+        background: none; border: none; padding: 0.5rem 0; font: inherit; cursor: pointer;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+      }
       .fade-in { animation: fadeSlide 0.3s ease-out; }
       @keyframes fadeSlide {
         from { opacity: 0; transform: translateY(16px); }
@@ -97,8 +108,12 @@ import { HOSPITAL_WAIT_MINUTES } from '../../../core/constants/hospital-wait-min
       }
       .checkin-reminder { font-size: 0.875rem; color: #6b7280; margin: 0 0 1rem; }
       .checkin-link {
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         padding: 0.75rem 1.5rem;
+        min-height: 48px;
+        box-sizing: border-box;
         background: #2563eb;
         color: white;
         border-radius: 0.5rem;

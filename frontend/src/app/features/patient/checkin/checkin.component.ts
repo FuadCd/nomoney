@@ -22,22 +22,33 @@ import {
   `,
   styles: [
     `
-      .checkin-page { max-width: 672px; margin: 0 auto; }
+      .checkin-page {
+        max-width: 672px;
+        margin: 0 auto;
+        padding-left: env(safe-area-inset-left, 0);
+        padding-right: env(safe-area-inset-right, 0);
+        padding-bottom: env(safe-area-inset-bottom, 0);
+      }
       .checkin-card {
         background: white;
         border-radius: 0.5rem;
         border: 1px solid #e5e7eb;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        padding: 1.5rem;
+        padding: 1rem;
+      }
+      @media (min-width: 640px) {
+        .checkin-card { padding: 1.5rem; }
       }
       .back-link {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
         color: var(--p-accent, #2563eb);
         text-decoration: none;
         font-size: 0.875rem;
       }
       .back-link:hover { text-decoration: underline; }
-      .back-btn { background: none; border: none; padding: 0; font: inherit; cursor: pointer; }
+      .back-btn { background: none; border: none; padding: 0.5rem 0; font: inherit; cursor: pointer; }
     `,
   ],
 })

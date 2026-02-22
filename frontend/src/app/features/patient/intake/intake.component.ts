@@ -53,13 +53,21 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
   `,
   styles: [
     `
-      .intake { min-height: 100%; }
+      .intake {
+        min-height: 100%;
+        padding-left: env(safe-area-inset-left, 0);
+        padding-right: env(safe-area-inset-right, 0);
+        padding-bottom: env(safe-area-inset-bottom, 0);
+      }
       .intake-card {
         background: white;
         border-radius: 0.5rem;
         border: 1px solid #e5e7eb;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        padding: 1.5rem;
+        padding: 1rem;
+      }
+      @media (min-width: 640px) {
+        .intake-card { padding: 1.5rem; }
       }
       .back-link {
         display: inline-block;

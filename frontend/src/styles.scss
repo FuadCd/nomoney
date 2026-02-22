@@ -1,14 +1,22 @@
 // Global styles (no Angular Material - using Tailwind + theme.css)
 
+html {
+  min-height: 100%;
+  padding: 0;
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+
 body {
   color-scheme: light;
   background-color: var(--background, #f4f6f9);
   color: var(--foreground, #1A1A2E);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   margin: 0;
-  height: 100%;
+  min-height: 100%;
   font-size: var(--font-size, 16px);
   line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
 }
 
 // Global typography hierarchy (theme.css base layer also defines these)
@@ -37,13 +45,47 @@ h3, .h3 {
 }
 
 
+// Safe area insets for notched devices (phones)
+:root {
+  --safe-top: env(safe-area-inset-top, 0);
+  --safe-right: env(safe-area-inset-right, 0);
+  --safe-bottom: env(safe-area-inset-bottom, 0);
+  --safe-left: env(safe-area-inset-left, 0);
+}
+
+// Touch-friendly: minimum 44px tap targets, reduce tap highlight
+button,
+a,
+[role="button"],
+input[type="submit"],
+input[type="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
 // Utility classes
 .max-width-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 16px 16px calc(16px + var(--safe-bottom));
+  padding-left: calc(16px + var(--safe-left));
+  padding-right: calc(16px + var(--safe-right));
+  padding-top: calc(16px + var(--safe-top));
+}
+
+@media (min-width: 640px) {
+  .max-width-container {
+    padding: 24px calc(24px + var(--safe-right)) calc(24px + var(--safe-bottom)) calc(24px + var(--safe-left));
+    padding-top: calc(24px + var(--safe-top));
+  }
 }
 
 .content-padding {
-  padding: 24px;
+  padding: 16px;
+}
+
+@media (min-width: 640px) {
+  .content-padding {
+    padding: 24px;
+  }
 }

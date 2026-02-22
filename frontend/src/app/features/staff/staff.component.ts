@@ -13,16 +13,16 @@ const MEDIAN_PHYSICIAN_MINUTES = 87;
   standalone: true,
   imports: [AsyncPipe, DecimalPipe],
   template: `
-    <div class="min-h-screen bg-gray-50">
+    <div class="staff-page min-h-screen bg-gray-50">
       <!-- Header -->
       <div class="bg-white border-b shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 py-4">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
+        <div class="staff-header-inner">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
               <button
                 type="button"
                 (click)="goBack()"
-                class="p-2 -ml-2 rounded hover:bg-gray-100"
+                class="staff-tap-target p-2 -ml-2 rounded hover:bg-gray-100"
                 aria-label="Back"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -33,21 +33,21 @@ const MEDIAN_PHYSICIAN_MINUTES = 87;
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
                 </svg>
-                <div>
+                <div class="min-w-0">
                   @if (hospitalName()) {
-                    <h1 class="text-2xl font-bold text-gray-900">{{ hospitalName() }}</h1>
+                    <h1 class="staff-title text-lg sm:text-2xl font-bold text-gray-900 truncate">{{ hospitalName() }}</h1>
                   } @else {
-                    <h1 class="text-2xl font-bold text-gray-900">Staff Dashboard</h1>
+                    <h1 class="staff-title text-lg sm:text-2xl font-bold text-gray-900">Staff Dashboard</h1>
                   }
                   <p class="text-sm text-gray-600 mt-0.5">Staff Dashboard</p>
                 </div>
               </div>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 shrink-0">
               <button
                 type="button"
                 (click)="goToAdmin()"
-                class="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
+                class="staff-tap-target px-4 py-2.5 min-h-[44px] text-sm font-medium text-blue-600 hover:text-blue-700 rounded-md"
               >
                 Admin
               </button>
@@ -57,9 +57,9 @@ const MEDIAN_PHYSICIAN_MINUTES = 87;
       </div>
 
       <!-- Main Content -->
-      <div class="max-w-7xl mx-auto px-4 py-6">
+      <div class="staff-main">
         <!-- Stats Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
           <div class="bg-white rounded-lg border border-gray-200 p-4">
             <p class="text-sm text-gray-600 mb-1">Total Patients</p>
             <p class="text-3xl font-bold">{{ (patients$ | async)?.length ?? 0 }}</p>
@@ -86,18 +86,18 @@ const MEDIAN_PHYSICIAN_MINUTES = 87;
         <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
           <h2 class="text-lg font-semibold text-gray-900 mb-1">Time Controls</h2>
           <p class="text-sm text-gray-600 mb-4">Use +15 min to see burden and alerts update dynamically</p>
-          <div class="flex gap-3">
+          <div class="flex flex-col sm:flex-row gap-3">
             <button
               type="button"
               (click)="add15Minutes()"
-              class="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700"
+              class="staff-btn staff-btn-primary"
             >
               Add +15 min
             </button>
             <button
               type="button"
               (click)="resetTime()"
-              class="px-4 py-2 border border-gray-300 rounded-md font-medium hover:bg-gray-50"
+              class="staff-btn staff-btn-secondary"
             >
               Reset time
             </button>
@@ -208,7 +208,7 @@ const MEDIAN_PHYSICIAN_MINUTES = 87;
                       <button
                         type="button"
                         (click)="recordCheckIn(p)"
-                        class="mt-4 w-full py-2 border border-blue-600 text-blue-600 font-medium rounded-md hover:bg-blue-50"
+                        class="staff-btn staff-btn-outline mt-4 w-full py-2.5 min-h-[44px] border border-blue-600 text-blue-600 font-medium rounded-md hover:bg-blue-50"
                       >
                         Record Check-In
                       </button>
@@ -224,6 +224,35 @@ const MEDIAN_PHYSICIAN_MINUTES = 87;
       </div>
     </div>
   `,
+  styles: [
+    `
+      .staff-page { padding-left: env(safe-area-inset-left, 0); padding-right: env(safe-area-inset-right, 0); padding-bottom: env(safe-area-inset-bottom, 0); }
+      .staff-header-inner {
+        max-width: 80rem;
+        margin: 0 auto;
+        padding: 1rem 1rem 1rem calc(1rem + env(safe-area-inset-left, 0));
+        padding-right: calc(1rem + env(safe-area-inset-right, 0));
+        padding-top: calc(1rem + env(safe-area-inset-top, 0));
+      }
+      .staff-main {
+        max-width: 80rem;
+        margin: 0 auto;
+        padding: 1rem 1rem calc(1.5rem + env(safe-area-inset-bottom, 0));
+        padding-left: calc(1rem + env(safe-area-inset-left, 0));
+        padding-right: calc(1rem + env(safe-area-inset-right, 0));
+      }
+      @media (min-width: 640px) {
+        .staff-header-inner, .staff-main { padding-left: 1.5rem; padding-right: 1.5rem; }
+      }
+      .staff-tap-target { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
+      .staff-btn { min-height: 44px; padding: 0.5rem 1rem; font-size: 1rem; border-radius: 0.375rem; cursor: pointer; transition: background 0.15s; }
+      .staff-btn-primary { background: #2563eb; color: white; border: none; }
+      .staff-btn-primary:hover { background: #1d4ed8; }
+      .staff-btn-secondary { background: white; border: 1px solid #d1d5db; color: #374151; }
+      .staff-btn-secondary:hover { background: #f9fafb; }
+      .staff-btn-outline { }
+    `,
+  ],
 })
 export class StaffComponent implements OnInit {
   private store = inject(PatientStoreService);
