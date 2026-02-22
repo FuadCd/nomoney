@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { ApiService } from './api.service';
 import { Observable } from 'rxjs';
+import { PatientsService } from './patients.service';
+import { Patient } from '../../models/patient.model';
 
 export interface CheckInInput {
   passportId: string;
@@ -10,16 +11,19 @@ export interface CheckInInput {
   timestamp?: string;
 }
 
+export interface CheckInResponse {
+  patient: Patient | null;
+  suggestedActions: string[];
+  nextCheckInMinutes: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CheckInService {
-  constructor(private api: ApiService) {}
+  constructor(private patientsApi: PatientsService) {}
 
-  submitCheckIn(input: CheckInInput): Observable<{
-    accepted: boolean;
-    riskElevated: boolean;
-    suggestedActions: string[];
-    nextCheckInMinutes: number;
-  }> {
-    return this.api.post('/check-in', input);
+  /** POST to backend (single source of truth). No local store update. */
+  submitCheckIn(input: CheckInInput): Observable<CheckInResponse> {
+    const { passportId, ...body } = input;
+    return this.patientsApi.addCheckIn(passportId, body);
   }
 }

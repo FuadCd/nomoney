@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { CheckInDto } from './dto/check-in.dto';
+import { PatientsService } from '../patients/patients.service';
 
 @Injectable()
 export class CheckInService {
+  constructor(private readonly patientsService: PatientsService) {}
+
   processCheckIn(dto: CheckInDto) {
+    this.patientsService.addCheckIn(dto);
+
     const riskElevated = dto.discomfortLevel >= 4 || !dto.intendsToStay;
 
     return {

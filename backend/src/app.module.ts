@@ -7,6 +7,7 @@ import { WaitTimesModule } from './wait-times/wait-times.module';
 import { AccessibilityProfilesModule } from './accessibility-profiles/accessibility-profiles.module';
 import { BurdenModelingModule } from './burden-modeling/burden-modeling.module';
 import { CheckInModule } from './check-in/check-in.module';
+import { PatientsModule } from './patients/patients.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { CheckInModule } from './check-in/check-in.module';
     WaitTimesModule,
     AccessibilityProfilesModule,
     BurdenModelingModule,
+    PatientsModule,
     CheckInModule,
   ],
   controllers: [AppController, HealthController],

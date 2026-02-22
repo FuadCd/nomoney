@@ -195,7 +195,7 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
       await this.scanner.start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => this.onScanSuccess(decodedText),
+        (decodedText: string) => this.onScanSuccess(decodedText),
         () => {}
       );
     } catch (err) {

@@ -1,12 +1,16 @@
-import { Component, inject, OnInit, signal, afterNextRender } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, afterNextRender } from '@angular/core';
 import { Router } from '@angular/router';
 import { AsyncPipe, DecimalPipe } from '@angular/common';
+import { interval, Subscription } from 'rxjs';
+import { startWith, switchMap } from 'rxjs/operators';
 import { PatientStoreService } from '../../core/patient-store.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { BurdenUpdaterService } from '../../core/burden-updater.service';
+import { PatientsService } from '../../core/services/patients.service';
 import { Patient, AccessibilityFlags } from '../../models/patient.model';
 
 const MEDIAN_PHYSICIAN_MINUTES = 87;
+const SYNC_INTERVAL_MS = 3000;
 
 @Component({
   selector: 'app-staff',
@@ -265,13 +269,15 @@ const MEDIAN_PHYSICIAN_MINUTES = 87;
     `,
   ],
 })
-export class StaffComponent implements OnInit {
+export class StaffComponent implements OnInit, OnDestroy {
   private store = inject(PatientStoreService);
   private auth = inject(AuthService);
   private router = inject(Router);
   private burdenUpdater = inject(BurdenUpdaterService);
+  private patientsApi = inject(PatientsService);
 
   patients$ = this.store.getPatients();
+  private syncSub: Subscription | null = null;
 
   criticalAlertsCount = signal(0);
   warningAlertsCount = signal(0);
@@ -305,6 +311,27 @@ export class StaffComponent implements OnInit {
       this.warningAlertsCount.set(patients.filter(p => p.alertLevel === 'amber').length);
       this.greenCount.set(patients.filter(p => p.alertLevel === 'green').length);
     });
+
+    const hospitalKey = this.auth.getStaffHospitalKey();
+    if (hospitalKey) {
+      this.syncSub = interval(SYNC_INTERVAL_MS)
+        .pipe(
+          startWith(0),
+          switchMap(() => this.patientsApi.getByHospital(hospitalKey)),
+        )
+        .subscribe({
+          next: (patients) => {
+            this.store.setPatientsFromBackend(patients);
+            this.burdenUpdater.refreshAll();
+          },
+          error: () => {},
+        });
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.syncSub?.unsubscribe();
+    this.syncSub = null;
   }
 
   goBack(): void {

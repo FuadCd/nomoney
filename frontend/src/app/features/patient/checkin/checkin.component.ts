@@ -2,7 +2,6 @@ import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { I18nService } from '../patient.component';
 import { CheckInService } from '../../../core/services/check-in.service';
-import { PatientStoreService } from '../../../core/patient-store.service';
 import {
   CheckInFormComponent,
   CheckInFormResult,
@@ -55,7 +54,6 @@ import {
 export class CheckinComponent {
   private readonly router = inject(Router);
   private readonly checkInService = inject(CheckInService);
-  private readonly store = inject(PatientStoreService);
   readonly i18n = inject(I18nService);
 
   /** Back: after check-in flow, return to home. */
@@ -71,14 +69,6 @@ export class CheckinComponent {
 
     const assistanceRequested = this.mapNeedsToBackend(result.needs);
     const intendsToStay = result.planningToLeave !== 'leaving';
-    const timestamp = new Date().toISOString();
-
-    const checkInPayload = {
-      discomfort: result.discomfort,
-      needsHelp: result.needs.length > 0 && !result.needs.includes('none'),
-      planningToLeave: result.planningToLeave === 'leaving',
-      timestamp: Date.now(),
-    };
 
     this.checkInService
       .submitCheckIn({
@@ -86,17 +76,11 @@ export class CheckinComponent {
         discomfortLevel: result.discomfort,
         assistanceRequested: assistanceRequested.length ? assistanceRequested : undefined,
         intendsToStay,
-        timestamp,
+        timestamp: new Date().toISOString(),
       })
       .subscribe({
-        next: () => {
-          this.store.addCheckIn(patientId, checkInPayload);
-          this.router.navigate(['/patient/waiting']);
-        },
-        error: () => {
-          this.store.addCheckIn(patientId, checkInPayload);
-          this.router.navigate(['/patient/waiting']);
-        },
+        next: () => this.router.navigate(['/patient/waiting']),
+        error: () => this.router.navigate(['/patient/waiting']),
       });
   }
 
