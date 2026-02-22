@@ -106,6 +106,13 @@ export class PatientStoreService {
     this.patients$.next(list);
   }
 
+  removePatient(patientId: string) {
+    const list = this.getSnapshot().filter((p) => p.id !== patientId);
+    this.patients$.next(list);
+    this.burdenCurves.delete(patientId);
+    this.log('removePatient', { patientId });
+  }
+
   addCheckIn(patientId: string, checkIn: CheckIn) {
     const patient = this.getSnapshot().find((p) => p.id === patientId);
     if (!patient) return;

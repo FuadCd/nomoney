@@ -89,14 +89,14 @@ const SYNC_INTERVAL_MS = 3000;
         <!-- Time Controls -->
         <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
           <h2 class="text-lg font-semibold text-gray-900 mb-1">Time Controls</h2>
-          <p class="text-sm text-gray-600 mb-4">Use +15 min to see burden and alerts update dynamically</p>
+          <p class="text-sm text-gray-600 mb-4">Use +30 min to see burden and alerts update dynamically</p>
           <div class="flex flex-col sm:flex-row gap-3">
             <button
               type="button"
-              (click)="add15Minutes()"
+              (click)="add30Minutes()"
               class="staff-btn staff-btn-primary"
             >
-              Add +15 min
+              Add +30 min
             </button>
             <button
               type="button"
@@ -183,6 +183,15 @@ const SYNC_INTERVAL_MS = 3000;
                             [class.bg-green-600]="p.burdenIndex < 45"
                           ></div>
                         </div>
+                        @let lwbsPct = getLwbsRiskPercent(p);
+                        @if (lwbsPct !== null) {
+                          <p class="text-xs text-gray-600 mt-1.5">
+                            Risk of leaving without being seen: {{ lwbsPct }}%
+                            @if (lwbsPct >= 30) {
+                              <span class="font-medium text-amber-700">(elevated)</span>
+                            }
+                          </p>
+                        }
                       </div>
 
                       @if (getFlagItems(p.flags).length > 0) {
@@ -226,10 +235,10 @@ const SYNC_INTERVAL_MS = 3000;
 
                       <button
                         type="button"
-                        (click)="recordCheckIn(p)"
+                        (click)="sentToDoctor(p)"
                         class="staff-btn staff-btn-outline mt-4 w-full py-2.5 min-h-[44px] border border-blue-600 text-blue-600 font-medium rounded-md hover:bg-blue-50"
                       >
-                        Record Check-In
+                        Sent to Doctor — Off Queue
                       </button>
                     </div>
                   }
@@ -420,6 +429,17 @@ export class StaffComponent implements OnInit, OnDestroy {
     return keys.map((k) => this.needLabels[k] ?? k).join(', ');
   }
 
+  /** LWBS risk at patient's current wait time (0–100), or null if no curve. */
+  getLwbsRiskPercent(p: Patient): number | null {
+    const curve = this.store.getBurdenCurve(p.id);
+    if (!curve?.length) return null;
+    const waitMin = this.getMinutesWaited(p);
+    const point = curve.reduce((a, b) =>
+      Math.abs(a.timeMinutes - waitMin) <= Math.abs(b.timeMinutes - waitMin) ? a : b,
+    );
+    return Math.round((point.lwbsProbability ?? 0) * 100);
+  }
+
   hasLwbsRisk(p: Patient): boolean {
     const intendsToStayFalse = p.checkIns.some((c) => c.planningToLeave);
     const minutesWaited = this.getMinutesWaited(p);
@@ -463,8 +483,8 @@ export class StaffComponent implements OnInit, OnDestroy {
     return actions.join(' • ');
   }
 
-  add15Minutes(): void {
-    this.store.advanceDemoTime(15 * 60 * 1000);
+  add30Minutes(): void {
+    this.store.advanceDemoTime(30 * 60 * 1000);
     this.burdenUpdater.refreshAll();
   }
 
@@ -473,7 +493,12 @@ export class StaffComponent implements OnInit, OnDestroy {
     this.burdenUpdater.refreshAll();
   }
 
-  recordCheckIn(p: Patient): void {
-    console.log('Record check-in for patient:', p.id);
+  sentToDoctor(p: Patient): void {
+    this.patientsApi.remove(p.id).subscribe({
+      next: (res) => {
+        if (res.ok) this.store.removePatient(p.id);
+      },
+      error: () => {},
+    });
   }
 }

@@ -106,6 +106,20 @@ const ADMIN_POLL_MS = 3000;
                     <div class="admin-metric-label">Active monitoring</div>
                   </div>
                 </div>
+
+                <!-- High LWBS Risk Card -->
+                <div class="admin-metric-card admin-metric-card-lwbs">
+                  <div class="admin-metric-card-header">
+                    <h3 class="admin-metric-card-title">High LWBS Risk</h3>
+                  </div>
+                  <div class="admin-metric-card-content">
+                    <div class="admin-metric-value-large">{{ s.highLwbsRiskCount }}</div>
+                    <div class="admin-metric-label">of {{ s.totalPatients }} patients ({{ s.highLwbsRiskPercent }}%)</div>
+                    <div class="admin-metric-status">
+                      Avg LWBS risk: {{ s.avgLwbsRisk }}%
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -290,6 +304,9 @@ const ADMIN_POLL_MS = 3000;
                   </div>
                   <p class="admin-sources-note">
                     Burden calculations use equity-weighted algorithms to prioritize vulnerable populations
+                  </p>
+                  <p class="admin-sources-note admin-sources-note-lwbs">
+                    Includes hospital-level LWBS baselines (HQCA) and time-to-physician risk modeling (McMaster).
                   </p>
                 </div>
               </div>
@@ -487,6 +504,10 @@ const ADMIN_POLL_MS = 3000;
 
       .admin-metric-card-tertiary .admin-metric-value-large {
         color: #6b21a8;
+      }
+
+      .admin-metric-card-lwbs .admin-metric-value-large {
+        color: #047857;
       }
 
       .admin-metric-label {
@@ -966,6 +987,10 @@ const ADMIN_POLL_MS = 3000;
         color: #3b82f6;
         font-style: italic;
         margin: 0;
+      }
+
+      .admin-sources-note-lwbs {
+        margin-top: 8px;
       }
 
       /* Responsive */

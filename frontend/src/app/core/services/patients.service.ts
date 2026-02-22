@@ -24,6 +24,11 @@ export class PatientsService {
     );
   }
 
+  /** Remove patient from queue (sent to doctor / off queue). */
+  remove(patientId: string): Observable<{ ok: boolean }> {
+    return this.api.delete<{ ok: boolean }>(`/patients/${encodeURIComponent(patientId)}`);
+  }
+
   /** Append check-in; returns updated patient + suggestions. */
   addCheckIn(
     patientId: string,

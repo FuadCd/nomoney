@@ -15,6 +15,8 @@ const EQUITY_FLAGS = [
 
 export type EquityFlagKey = (typeof EQUITY_FLAGS)[number];
 
+const LWBS_RISK_THRESHOLD = 0.3; // 30% = high LWBS risk
+
 export interface AdminSummary {
   totalPatients: number;
   avgBurden: number;
@@ -30,6 +32,12 @@ export interface AdminSummary {
   avgBurdenByFlag: Record<EquityFlagKey, number>;
   redRateByFlag: Record<EquityFlagKey, number>;
   countByFlag: Record<EquityFlagKey, number>;
+  /** Average LWBS risk across patients with burden curves (0–100). */
+  avgLwbsRisk: number;
+  /** Count of patients above LWBS risk threshold (30%). */
+  highLwbsRiskCount: number;
+  /** % of patients above LWBS risk threshold. */
+  highLwbsRiskPercent: number;
 }
 
 function hasFlag(flags: AccessibilityFlags | undefined, key: EquityFlagKey): boolean {
@@ -95,6 +103,27 @@ export class AdminSummaryService {
       redRateByFlag[key] = n ? Math.round((redCount / n) * 100) : 0;
     }
 
+    const lwbsRisks = patients
+      .map((p) => {
+        const curve = this.store.getBurdenCurve(p.id);
+        if (!curve?.length) return null;
+        const last = curve[curve.length - 1];
+        return last.lwbsProbability ?? 0;
+      })
+      .filter((v): v is number => v !== null);
+    const withCurves = lwbsRisks.length;
+    const avgLwbsRisk = withCurves
+      ? Math.round(
+          (lwbsRisks.reduce((s, v) => s + v, 0) / withCurves) * 100
+        )
+      : 0;
+    const highLwbsRiskCount = lwbsRisks.filter(
+      (v) => v >= LWBS_RISK_THRESHOLD
+    ).length;
+    const highLwbsRiskPercent = total
+      ? Math.round((highLwbsRiskCount / total) * 100)
+      : 0;
+
     return {
       totalPatients: total,
       avgBurden,
@@ -103,6 +132,9 @@ export class AdminSummaryService {
       avgBurdenByFlag,
       redRateByFlag,
       countByFlag,
+      avgLwbsRisk,
+      highLwbsRiskCount,
+      highLwbsRiskPercent,
     };
   }
 }

@@ -24,7 +24,7 @@ export class BurdenUpdaterService implements OnDestroy {
     this.checkInTickSub = this.checkInTimer.tick$.subscribe(() => this.refreshAllBurden());
   }
 
-  /** Call from Staff Dashboard to refresh burden after time controls (e.g. Add +15 min, Reset time). */
+  /** Call from Staff Dashboard to refresh burden after time controls (e.g. Add +30 min, Reset time). */
   refreshAll(): void {
     this.refreshAllBurden();
   }
