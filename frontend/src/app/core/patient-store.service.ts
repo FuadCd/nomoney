@@ -71,6 +71,12 @@ export class PatientStoreService {
     return this.patients$.value;
   }
 
+  /** Replace store with backend list (multi-device sync). */
+  setPatientsFromBackend(patients: Patient[]): void {
+    this.log('setPatientsFromBackend', { count: patients.length });
+    this.patients$.next(patients.slice());
+  }
+
   getPatientById(id: string): Patient | undefined {
     return this.getSnapshot().find((p) => p.id === id);
   }

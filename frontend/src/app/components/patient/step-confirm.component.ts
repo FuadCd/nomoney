@@ -2,6 +2,7 @@ import { Component, input, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { I18nService, IntakeAccessibilityProfile } from '../../features/patient/patient.component';
 import { PatientStoreService } from '../../core/patient-store.service';
+import { PatientsService } from '../../core/services/patients.service';
 import { Patient } from '../../models/patient.model';
 
 /** Vulnerability weights per spec (sum = vulnerabilityMultiplier - 1). */
@@ -133,6 +134,7 @@ export class StepConfirmComponent {
   readonly i18n = inject(I18nService);
   private readonly store = inject(PatientStoreService);
   private readonly router = inject(Router);
+  private readonly patientsApi = inject(PatientsService);
   readonly loading = signal(false);
 
   readonly topIcons = computed(() => {
@@ -194,6 +196,7 @@ export class StepConfirmComponent {
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.setItem('patient_hospital_key', assignedHospitalKey);
     }
+    this.patientsApi.register(patient).subscribe({ error: () => {} });
     setTimeout(() => this.router.navigate(['/patient/waiting']), 600);
   }
 }

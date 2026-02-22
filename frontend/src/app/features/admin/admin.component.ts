@@ -1,8 +1,12 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AsyncPipe } from '@angular/common';
+import { interval, Subscription } from 'rxjs';
+import { startWith, switchMap } from 'rxjs/operators';
 import { AuthService } from '../../core/auth/auth.service';
 import { AdminSummaryService, type AdminSummary, type EquityFlagKey } from '../../core/services/admin-summary.service';
+import { PatientsService } from '../../core/services/patients.service';
+import { PatientStoreService } from '../../core/patient-store.service';
 
 const EQUITY_LABELS: Record<EquityFlagKey, string> = {
   mobility: 'Mobility',
@@ -12,6 +16,7 @@ const EQUITY_LABELS: Record<EquityFlagKey, string> = {
   language: 'Language',
   alone: 'Alone',
 };
+const ADMIN_POLL_MS = 3000;
 
 @Component({
   selector: 'app-admin',
@@ -245,11 +250,25 @@ const EQUITY_LABELS: Record<EquityFlagKey, string> = {
     `,
   ],
 })
-export class AdminComponent {
+export class AdminComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private adminSummary = inject(AdminSummaryService);
+  private patientsApi = inject(PatientsService);
+  private store = inject(PatientStoreService);
+  private pollSub: Subscription | null = null;
 
   readonly summary$ = this.adminSummary.getSummary$();
+
+  ngOnInit(): void {
+    this.pollSub = interval(ADMIN_POLL_MS)
+      .pipe(startWith(0), switchMap(() => this.patientsApi.getAll()))
+      .subscribe({ next: (patients) => this.store.setPatientsFromBackend(patients), error: () => {} });
+  }
+
+  ngOnDestroy(): void {
+    this.pollSub?.unsubscribe();
+    this.pollSub = null;
+  }
 
   goBack(): void {
     this.router.navigate(['/staff']);
