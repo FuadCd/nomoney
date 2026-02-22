@@ -12,7 +12,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  const port = process.env.PORT ?? 3001;
+  const port = process.env.PORT ?? 3002;
   await app.listen(port);
   console.log(`AccessER API running at http://localhost:${port}/api`);
 }
