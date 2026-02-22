@@ -7,6 +7,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { AdminSummaryService, type AdminSummary, type EquityFlagKey } from '../../core/services/admin-summary.service';
 import { PatientsService } from '../../core/services/patients.service';
 import { PatientStoreService } from '../../core/patient-store.service';
+import { BurdenUpdaterService } from '../../core/burden-updater.service';
 
 const EQUITY_LABELS: Record<EquityFlagKey, string> = {
   mobility: 'Mobility',
@@ -74,25 +75,6 @@ const ADMIN_POLL_MS = 3000;
                     <div class="admin-metric-status">
                       {{ s.avgBurden < 45 ? 'System performing well' : s.avgBurden < 70 ? 'Moderate load' : 'High system burden' }}
                     </div>
-                  </div>
-                </div>
-
-                <!-- Missed Check-in Rate Card -->
-                <div class="admin-metric-card admin-metric-card-secondary">
-                  <div class="admin-metric-card-header">
-                    <h3 class="admin-metric-card-title">Missed Check-in Rate</h3>
-                  </div>
-                  <div class="admin-metric-card-content">
-                    <div class="admin-metric-value-large">{{ s.missedCheckInRate }}%</div>
-                    <div class="admin-metric-label">of patients</div>
-                    @if (s.missedCheckInRate > 20) {
-                      <div class="admin-metric-warning">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="admin-metric-warning-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
-                        <span>Above threshold</span>
-                      </div>
-                    }
                   </div>
                 </div>
 
@@ -468,6 +450,10 @@ const ADMIN_POLL_MS = 3000;
 
       .admin-metric-card-tertiary {
         background: linear-gradient(to bottom right, #faf5ff, #f3e8ff);
+      }
+
+      .admin-metric-card-lwbs {
+        background: linear-gradient(to bottom right, #ecfdf5, #d1fae5);
       }
 
       .admin-metric-card-header {
@@ -1037,6 +1023,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   private adminSummary = inject(AdminSummaryService);
   private patientsApi = inject(PatientsService);
   private store = inject(PatientStoreService);
+  private burdenUpdater = inject(BurdenUpdaterService);
   private pollSub: Subscription | null = null;
 
   readonly summary$ = this.adminSummary.getSummary$();
@@ -1044,7 +1031,13 @@ export class AdminComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.pollSub = interval(ADMIN_POLL_MS)
       .pipe(startWith(0), switchMap(() => this.patientsApi.getAll()))
-      .subscribe({ next: (patients) => this.store.setPatientsFromBackend(patients), error: () => {} });
+      .subscribe({
+        next: (patients) => {
+          this.store.setPatientsFromBackend(patients);
+          this.burdenUpdater.refreshAll();
+        },
+        error: () => {},
+      });
   }
 
   ngOnDestroy(): void {
