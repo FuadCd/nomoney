@@ -65,7 +65,7 @@ export interface CheckInFormResult {
             }
           </div>
         </fieldset>
-        <button type="button" class="continue-btn" (click)="confirmNeeds()">
+        <button type="button" class="continue-btn" (click)="confirmNeeds()" aria-label="Continue">
           {{ i18n.t('continue') }}
         </button>
       </div>

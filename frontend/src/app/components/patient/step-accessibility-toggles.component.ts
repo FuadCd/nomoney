@@ -38,7 +38,7 @@ interface ToggleItem {
           }
         </div>
       </fieldset>
-      <button type="button" class="next-btn" (click)="submit()">
+      <button type="button" class="next-btn" (click)="submit()" aria-label="Continue">
         {{ i18n.t('continue') }}
       </button>
     </div>

@@ -13,14 +13,13 @@ export interface ContextRiskResult {
   template: `
     <div class="step">
       <h2 class="question">{{ i18n.t('hospitalQuestion') }}</h2>
-      <label for="intake-hospital-select" class="hospital-label">{{ i18n.t('hospitalLabel') }}</label>
       <select
         id="intake-hospital-select"
         class="hospital-select"
         [value]="hospitalKey()"
         (change)="onHospitalChange($event)"
         required
-        [attr.aria-label]="i18n.t('hospitalLabel')"
+        [attr.aria-label]="i18n.t('hospitalPlaceholder')"
       >
         <option value="" disabled>{{ i18n.t('hospitalPlaceholder') }}</option>
         @for (h of hospitals; track h.key) {
@@ -51,14 +50,19 @@ export interface ContextRiskResult {
         </div>
       </fieldset>
 
+      @if (incompleteError()) {
+        <p id="step1-incomplete-error" class="step1-error" role="alert" aria-live="polite">
+          {{ incompleteError() }}
+        </p>
+      }
       <button
         type="button"
         class="next-btn"
         (click)="submit()"
-        [disabled]="!canSubmit()"
-      >
-        {{ i18n.t('continue') }}
-      </button>
+        [attr.aria-describedby]="incompleteError() ? 'step1-incomplete-error' : null"
+        [class.next-btn-dimmed]="!canSubmit()"
+        aria-label="Continue"
+      >{{ i18n.t('continue') }}</button>
     </div>
   `,
   styles: [
@@ -87,13 +91,6 @@ export interface ContextRiskResult {
       }
       .hospital-select:focus {
         border-color: var(--p-accent, #0d47a1);
-      }
-      .hospital-label {
-        display: block;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--p-fg, #1a1a1a);
-        margin-bottom: 0.25rem;
       }
       .discomfort-fieldset {
         border: none;
@@ -180,13 +177,23 @@ export interface ContextRiskResult {
         border-radius: 12px;
         cursor: pointer;
         transition: opacity 0.15s;
+        /* Voice Control: ensure button is always hit-testable (no overlay can block) */
+        pointer-events: auto;
       }
-      .next-btn:hover:not(:disabled) {
+      .next-btn:hover:not(.next-btn-dimmed) {
         opacity: 0.95;
       }
-      .next-btn:disabled {
+      .next-btn-dimmed {
         opacity: 0.5;
-        cursor: not-allowed;
+      }
+      .step1-error {
+        margin: 0;
+        padding: 0.75rem 1rem;
+        font-size: 0.9375rem;
+        color: #b91c1c;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 0.5rem;
       }
     `,
   ],
@@ -208,6 +215,7 @@ export class StepContextRiskComponent {
     });
   }
   readonly discomfortLevel = signal<number | null>(null);
+  readonly incompleteError = signal('');
 
   readonly discomfortLevels = [
     { value: 1 },
@@ -220,10 +228,12 @@ export class StepContextRiskComponent {
   onHospitalChange(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
     this.hospitalKey.set(value);
+    this.incompleteError.set('');
   }
 
   selectDiscomfort(value: number): void {
     this.discomfortLevel.set(value);
+    this.incompleteError.set('');
   }
 
   canSubmit(): boolean {
@@ -231,10 +241,28 @@ export class StepContextRiskComponent {
   }
 
   submit(): void {
-    if (!this.canSubmit()) return;
+    if (!this.canSubmit()) {
+      this.incompleteError.set(this.i18n.t('incompleteStep1'));
+      this.focusFirstInvalid();
+      return;
+    }
+    this.incompleteError.set('');
     const key = this.hospitalKey();
     const level = this.discomfortLevel();
     if (!key || level == null) return;
     this.completed.emit({ hospitalKey: key, discomfortLevel: level });
+  }
+
+  private focusFirstInvalid(): void {
+    setTimeout(() => {
+      if (typeof document === 'undefined') return;
+      if (!this.hospitalKey()) {
+        const el = document.getElementById('intake-hospital-select');
+        if (el instanceof HTMLSelectElement) el.focus();
+      } else {
+        const el = document.getElementById('discomfort-1');
+        if (el instanceof HTMLInputElement) el.focus();
+      }
+    }, 0);
   }
 }
