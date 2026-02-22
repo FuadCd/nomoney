@@ -6,13 +6,13 @@ export const routes: Routes = [
     path: '',
     loadComponent: () =>
       import('./features/landing/landing.component').then((m) => m.LandingComponent),
-    title: 'AccessER',
+    title: 'FairQ',
   },
   {
     path: 'patient',
     loadComponent: () =>
       import('./features/patient/patient.component').then((m) => m.PatientComponent),
-    title: 'Patient Intake | AccessER',
+    title: 'Patient Intake | FairQ',
     children: [
       { path: '', redirectTo: 'intake/1', pathMatch: 'full' },
       // Intake steps: 1=context & risk (hospital, discomfort, leaving), 2=accessibility toggles, 3=confirm
@@ -41,13 +41,13 @@ export const routes: Routes = [
   {
     path: 'staff',
     loadComponent: () => import('./features/staff/staff.component').then((m) => m.StaffComponent),
-    title: 'Staff Dashboard | AccessER',
+    title: 'Staff Dashboard | FairQ',
     canActivate: [staffGuard],
   },
   {
     path: 'admin',
     loadComponent: () => import('./features/admin/admin.component').then((m) => m.AdminComponent),
-    title: 'Equity Simulator | AccessER',
+    title: 'Equity Simulator | FairQ',
     canActivate: [staffGuard],
   },
   { path: '**', redirectTo: '' },

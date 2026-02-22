@@ -295,7 +295,7 @@ export class A11yModeService {
             <svg xmlns="http://www.w3.org/2000/svg" class="header-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
             </svg>
-            <h1>AccessER</h1>
+            <h1>FairQ</h1>
           </div>
           <div class="a11y-toggles">
             <button
