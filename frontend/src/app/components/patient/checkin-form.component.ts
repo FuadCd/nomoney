@@ -18,9 +18,10 @@ export interface CheckInFormResult {
         <div class="discomfort-buttons">
           @for (level of discomfortLevels; track level.value) {
             <button
+              type="button"
               class="discomfort-btn"
               (click)="selectDiscomfort(level.value)"
-              [attr.aria-label]="'Discomfort level ' + level.value"
+              [attr.aria-label]="'Discomfort level ' + level.value + ', ' + level.emoji"
             >
               <span class="emoji">{{ level.emoji }}</span>
               <span class="label">{{ level.value }}</span>
@@ -37,6 +38,7 @@ export interface CheckInFormResult {
         <div class="needs-buttons">
           @for (need of needOptions; track need.key) {
             <button
+              type="button"
               class="need-btn"
               [class.selected]="selectedNeeds().has(need.key)"
               (click)="toggleNeed(need.key)"
@@ -48,7 +50,7 @@ export interface CheckInFormResult {
             </button>
           }
         </div>
-        <button class="continue-btn" (click)="confirmNeeds()" aria-label="Continue">→</button>
+        <button type="button" class="continue-btn" (click)="confirmNeeds()" aria-label="Continue to next question">→</button>
       </div>
     }
 
@@ -58,6 +60,7 @@ export interface CheckInFormResult {
         <h2 class="question">{{ i18n.t('checkinLeave') }}</h2>
         <div class="leave-buttons">
           <button
+            type="button"
             class="leave-btn staying"
             (click)="selectLeave('staying')"
             [attr.aria-label]="i18n.t('leaveStaying')"
@@ -65,6 +68,7 @@ export interface CheckInFormResult {
             {{ i18n.t('leaveStaying') }}
           </button>
           <button
+            type="button"
             class="leave-btn unsure"
             (click)="selectLeave('unsure')"
             [attr.aria-label]="i18n.t('leaveUnsure')"
@@ -72,6 +76,7 @@ export interface CheckInFormResult {
             {{ i18n.t('leaveUnsure') }}
           </button>
           <button
+            type="button"
             class="leave-btn leaving"
             (click)="selectLeave('leaving')"
             [attr.aria-label]="i18n.t('leaveThinking')"

@@ -13,8 +13,8 @@ interface ToggleItem {
   selector: 'app-step-accessibility-toggles',
   standalone: true,
   template: `
-    <div class="step">
-      <h2 class="title">{{ i18n.t('accessibilityTitle') }}</h2>
+    <div class="step" role="group" aria-labelledby="accessibility-step-title">
+      <h2 id="accessibility-step-title" class="title">{{ i18n.t('accessibilityTitle') }}</h2>
       <p class="subtitle">{{ i18n.t('accessibilitySubtitle') }}</p>
       <div class="accessibility-buttons">
         @for (item of toggles; track item.key) {

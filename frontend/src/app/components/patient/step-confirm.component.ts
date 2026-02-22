@@ -34,10 +34,12 @@ const VULN_WEIGHTS: Record<keyof IntakeAccessibilityProfile, number> = {
       </div>
 
       <button
+        type="button"
         class="confirm-btn"
         (click)="onConfirm()"
         [disabled]="loading()"
         [attr.aria-label]="i18n.t('confirmButton')"
+        [attr.aria-busy]="loading()"
       >
         @if (loading()) {
           <span class="spinner"></span>

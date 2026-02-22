@@ -17,13 +17,13 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
     StepConfirmComponent,
   ],
   template: `
-    <div class="intake p-4">
+    <main class="intake p-4">
       <div class="mb-8 text-center">
-        <p class="text-gray-600 text-sm">{{ i18n.t('stepXof3', { step: stepParam().toString() }) }}</p>
+        <p class="text-gray-600 text-sm" aria-live="polite">{{ i18n.t('stepXof3', { step: stepParam().toString() }) }}</p>
       </div>
       <div class="intake-card">
-        <button type="button" class="back-link back-btn mb-4" (click)="back()">&larr; Back</button>
-        <div class="progress-bar mb-6">
+        <button type="button" class="back-link back-btn mb-4" (click)="back()" aria-label="Back to previous step">&larr; Back</button>
+        <div class="progress-bar mb-6" role="progressbar" [attr.aria-valuenow]="stepParam()" aria-valuemin="1" aria-valuemax="3" [attr.aria-label]="'Step ' + stepParam() + ' of 3'">
           <div class="progress-fill" [style.width.%]="(stepParam() / 3) * 100"></div>
         </div>
 
@@ -53,7 +53,7 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
         }
       }
       </div>
-    </div>
+    </main>
   `,
   styles: [
     `
@@ -83,9 +83,12 @@ import { StepConfirmComponent } from '../../../components/patient/step-confirm.c
       .back-btn {
         background: none;
         border: none;
-        padding: 0;
+        padding: 0.5rem 0;
         font: inherit;
         cursor: pointer;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
       }
       .progress-bar {
         height: 6px;

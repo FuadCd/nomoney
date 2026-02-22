@@ -12,12 +12,12 @@ import {
   standalone: true,
   imports: [CheckInFormComponent],
   template: `
-    <div class="checkin-page p-4">
-      <button type="button" class="back-link back-btn mb-6" (click)="back()">&larr; Back</button>
+    <main class="checkin-page p-4">
+      <button type="button" class="back-link back-btn mb-6" (click)="back()" aria-label="Back to waiting page">&larr; Back</button>
       <div class="checkin-card">
         <app-checkin-form (completed)="onComplete($event)" />
       </div>
-    </div>
+    </main>
   `,
   styles: [
     `

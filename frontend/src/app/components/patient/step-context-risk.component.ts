@@ -12,13 +12,15 @@ export interface ContextRiskResult {
   standalone: true,
   template: `
     <div class="step">
-      <h2 class="question">{{ i18n.t('hospitalQuestion') }}</h2>
+      <h2 id="hospital-question" class="question">{{ i18n.t('hospitalQuestion') }}</h2>
+      <label for="intake-hospital-select" class="visually-hidden">{{ i18n.t('hospitalQuestion') }}</label>
       <select
+        id="intake-hospital-select"
         class="hospital-select"
         [value]="hospitalKey()"
         (change)="onHospitalChange($event)"
         required
-        aria-label="Select hospital"
+        [attr.aria-labelledby]="'hospital-question'"
       >
         <option value="" disabled>{{ i18n.t('hospitalPlaceholder') }}</option>
         @for (h of hospitals; track h.key) {
@@ -26,15 +28,16 @@ export interface ContextRiskResult {
         }
       </select>
 
-      <h2 class="question">{{ i18n.t('discomfortQuestion') }}</h2>
-      <div class="discomfort-grid">
+      <h2 id="discomfort-question" class="question">{{ i18n.t('discomfortQuestion') }}</h2>
+      <div class="discomfort-grid" role="group" [attr.aria-labelledby]="'discomfort-question'">
         @for (level of discomfortLevels; track level.value) {
           <button
             type="button"
             class="discomfort-btn"
             (click)="selectDiscomfort(level.value)"
             [class.selected]="discomfortLevel() === level.value"
-            [attr.aria-label]="'Discomfort ' + level.value"
+            [attr.aria-pressed]="discomfortLevel() === level.value"
+            [attr.aria-label]="i18n.t('discomfort' + level.value) + ', level ' + level.value"
           >
             <span class="discomfort-num">{{ level.value }}</span>
             <span class="discomfort-label">{{ i18n.t('discomfort' + level.value) }}</span>
@@ -47,7 +50,7 @@ export interface ContextRiskResult {
         class="next-btn"
         (click)="submit()"
         [disabled]="!canSubmit()"
-        aria-label="Continue"
+        aria-label="Continue to next step"
       >
         {{ i18n.t('continue') }}
       </button>
@@ -78,8 +81,18 @@ export interface ContextRiskResult {
         cursor: pointer;
       }
       .hospital-select:focus {
-        outline: none;
         border-color: var(--p-accent, #0d47a1);
+      }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
       .discomfort-grid {
         display: grid;

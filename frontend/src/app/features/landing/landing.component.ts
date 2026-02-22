@@ -9,27 +9,34 @@ import { QrScannerComponent } from '../../components/qr-scanner/qr-scanner.compo
   standalone: true,
   imports: [FormsModule, QrScannerComponent],
   template: `
-    <div class="landing-wrap">
+    <main class="landing-wrap">
       <div class="landing-inner">
         <div class="landing-card">
-          <div class="flex items-center justify-center gap-2 mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-            </svg>
-            <h1 class="text-2xl font-bold text-gray-900">AccessER</h1>
-          </div>
-          <p class="text-sm text-gray-600 text-center mb-6">Accessibility-Adjusted Emergency Room Burden</p>
+          <header class="landing-header">
+            <div class="flex items-center justify-center gap-2 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              <h1 class="text-2xl font-bold text-gray-900">AccessER</h1>
+            </div>
+            <p class="text-sm text-gray-600 text-center mb-6">Accessibility-Adjusted Emergency Room Burden</p>
+          </header>
 
           <div class="space-y-3">
             <input
               id="hospital-code"
               type="text"
               [(ngModel)]="hospitalCode"
-              placeholder="Hospital Code"
+              placeholder="Hospital code"
               aria-label="Hospital code"
+              [attr.aria-describedby]="codeError ? 'hospital-code-error' : null"
+              [attr.aria-invalid]="!!codeError"
               (keydown.enter)="submitCode()"
               class="landing-input"
             />
+            @if (codeError) {
+              <p id="hospital-code-error" class="text-sm text-red-600 landing-error" role="alert">{{ codeError }}</p>
+            }
             <button
               type="button"
               (click)="submitCode()"
@@ -37,9 +44,6 @@ import { QrScannerComponent } from '../../components/qr-scanner/qr-scanner.compo
             >
               Staff access
             </button>
-            @if (codeError) {
-              <p class="text-sm text-red-600">{{ codeError }}</p>
-            }
           </div>
 
           <div class="flex items-center gap-4 my-6">
@@ -69,7 +73,7 @@ import { QrScannerComponent } from '../../components/qr-scanner/qr-scanner.compo
       @if (showQrScanner()) {
         <app-qr-scanner (closed)="closeQrScanner()" />
       }
-    </div>
+    </main>
   `,
   styles: [
     `
@@ -108,9 +112,17 @@ import { QrScannerComponent } from '../../components/qr-scanner/qr-scanner.compo
         box-sizing: border-box;
       }
       .landing-input:focus {
-        outline: none;
         border-color: #3b82f6;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+      }
+      .landing-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.25rem;
+      }
+      .landing-error {
+        margin: 0.25rem 0 0;
       }
       .landing-btn {
         width: 100%;

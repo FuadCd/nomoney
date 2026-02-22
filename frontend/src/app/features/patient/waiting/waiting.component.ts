@@ -10,11 +10,11 @@ import { HOSPITAL_WAIT_MINUTES } from '../../../core/constants/hospital-wait-min
   standalone: true,
   imports: [RouterLink],
   template: `
-    <div class="waiting fade-in p-4">
-      <button type="button" class="back-link back-btn mb-6" (click)="back()">&larr; Back</button>
+    <main class="waiting fade-in p-4">
+      <button type="button" class="back-link back-btn mb-6" (click)="back()" aria-label="Back to home">&larr; Back</button>
       <div class="waiting-card">
         <div class="check-confirm">
-          <svg xmlns="http://www.w3.org/2000/svg" class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
           <h2>{{ i18n.t('waitingTitle') }}</h2>
@@ -27,7 +27,7 @@ import { HOSPITAL_WAIT_MINUTES } from '../../../core/constants/hospital-wait-min
       </div>
       <div class="wait-time-card">
         <h3 class="wait-time-title">{{ i18n.t('waitingTimeLabel') }}</h3>
-        <p class="time">
+        <p class="time" aria-live="polite" aria-atomic="true">
           @if (estimatedWaitFormatted(); as formatted) {
             {{ formatted }}
           } @else {
@@ -37,11 +37,11 @@ import { HOSPITAL_WAIT_MINUTES } from '../../../core/constants/hospital-wait-min
       </div>
       <div class="checkin-card">
         <p class="checkin-reminder">We'll check in with you every 20 minutes. Update your status to help us support you.</p>
-        <a class="checkin-link" routerLink="/patient/checkin" aria-label="Go to check-in">
+        <a class="checkin-link" routerLink="/patient/checkin">
           {{ i18n.t('checkinTitle') }}
         </a>
       </div>
-    </div>
+    </main>
   `,
   styles: [
     `
