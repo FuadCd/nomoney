@@ -1,8 +1,8 @@
-# AccessER
+# FairQ
 
 **Accessibility-Adjusted Emergency Room Burden Platform**
 
-AccessER is a real-time accessibility equity layer for emergency departments. It models how ER wait times disproportionately burden patients with functional accessibility needs and provides frontline staff and administrators with actionable insights to reduce inequity — without replacing triage or making clinical decisions.
+FairQ is a real-time accessibility equity layer for emergency departments. It models how ER wait times disproportionately burden patients with functional accessibility needs and provides frontline staff and administrators with actionable insights to reduce inequity — without replacing triage or making clinical decisions.
 
 ---
 
@@ -19,24 +19,73 @@ nomoney/
 
 ### Backend (NestJS)
 
-- **Base URL**: `http://localhost:3000/api`
-- **Endpoints**:
-  - `GET /health` — Health check
-  - `GET /wait-times` — Full snapshot (hospitals, wait minutes, LWBS rates)
-  - `GET /wait-times/facilities` — ER facilities list
-  - `GET /wait-times/current` — Current wait times
-  - `GET /wait-times/:hospitalKey` — Single hospital (e.g. `uofa`, `royalAlexandra`, `greyNuns`, `misericordia`, `sturgeon`)
-  - `GET /accessibility-profiles/templates` — Profile templates
-  - `POST /accessibility-profiles/compute` — Compute vulnerability multiplier
-  - `POST /burden-modeling/compute` — Compute burden curves, burden score, alert status
-  - `POST /check-in` — Submit 20-min check-in
+- **Base URL** (dev): `http://localhost:3002/api` (or `http://localhost:4200/api` via frontend proxy)
+
+**Endpoints**:
+
+| Module | Method | Path | Description |
+|--------|--------|------|-------------|
+| App | GET | `/` | Hello |
+| Health | GET | `/health` | Health check |
+| Client Info | GET | `/client-info` | Client IP (X-Forwarded-For) |
+| Wait Times | GET | `/wait-times` | Full snapshot (hospitals, wait minutes, LWBS rates) |
+| | GET | `/wait-times/facilities` | ER facilities list |
+| | GET | `/wait-times/current` | Current wait times |
+| | GET | `/wait-times/:hospitalKey` | Single hospital (`uofa`, `royalAlexandra`, etc.) |
+| Accessibility Profiles | GET | `/accessibility-profiles/templates` | Profile templates |
+| | POST | `/accessibility-profiles/compute` | Compute vulnerability multiplier |
+| Burden Modeling | POST | `/burden-modeling/compute` | Burden curves, score, alert status |
+| | POST | `/burden-modeling/estimated-wait` | Estimated wait minutes |
+| Patients | POST | `/patients` | Register patient |
+| | GET | `/patients` | All patients (optional `?hospitalKey=`) |
+| | POST | `/patients/:id/checkins` | Add patient check-in |
+| | POST | `/patients/:id/staff-checkin` | Record staff checked in with patient |
+| | DELETE | `/patients/:id` | Remove patient (sent to doctor / off queue) |
+| Check-in | POST | `/check-in` | Standalone check-in (delegates to PatientsService) |
 
 ### Frontend (Angular)
 
-- **Routes**:
-  - `/patient` — Patient Accessibility Intake
-  - `/staff` — Staff Real-Time Burden Dashboard
-  - `/admin` — Admin Dashboard (Model Health & Equity Overview, read-only)
+- **Base**: `http://localhost:4200`
+
+**Routes**:
+
+| Path | Component | Guard | Description |
+|------|-----------|-------|-------------|
+| `/` | Landing | — | Entry: Staff (code) or Patient |
+| `/patient` | Patient | — | Patient shell (children below) |
+| `/patient/intake/:step` | Intake | — | 3-step intake (context → accessibility → confirm) |
+| `/patient/checkin` | Checkin | — | Check-in form (discomfort, needs, planning) |
+| `/patient/waiting` | Waiting | — | Post check-in waiting view |
+| `/staff` | Staff | staffGuard | Staff dashboard (queue, actions) |
+| `/admin` | Admin | staffGuard | Admin dashboard (read-only) |
+| `**` | — | — | Redirect to `/` |
+
+### User Flows
+
+**Landing** — At `/`, user chooses Staff or Patient.
+
+**Patient flow**:
+1. Click "Patient" → `setPatientSession()` → `/patient/intake/1`
+2. Step 1: Select hospital, discomfort level, "thinking about leaving?"
+3. Step 2: Accessibility toggles (mobility, pain, sensory, cognitive, alone, language)
+4. Step 3: Confirm → `POST /patients` → store patient ID → `/patient/waiting`
+5. Waiting: View patient ID, estimated wait. Link to `/patient/checkin`
+6. Check-in: Discomfort, needs (interpreter, quiet space, etc.), planning (staying / unsure / leaving) → `POST /patients/:id/checkins` → back to waiting
+
+**Staff flow**:
+1. Click "Staff" → enter hospital code (001–005) → `setStaffSession(code)` → `/staff`
+2. Dashboard: Patients for selected hospital, stats (total, alerts, avg wait), time controls (+30 min, Reset)
+3. Patient cards: Burden index, LWBS risk, accessibility flags, latest check-in, suggested actions
+4. Actions: "Staff checked in with patient", "Sent to Doctor — Off Queue"
+5. Link to Admin → `/admin`
+
+**Admin flow** — Same auth as Staff. Read-only metrics: Average Burden, Total Patients, High LWBS Risk, alert distribution, equity by flag.
+
+### Auth
+
+- **Staff**: Hospital codes 001–005 map to backend keys (`uofa`, `royalAlexandra`, `greyNuns`, `misericordia`, `sturgeon`). Stored in `sessionStorage`.
+- **Guards**: `staffGuard` protects `/staff` and `/admin`; redirects to `/` if not staff.
+- **Patient**: No auth; patient ID and hospital key stored in `sessionStorage` for check-in.
 
 ---
 
@@ -57,8 +106,8 @@ npm run install:all
 npm run dev
 ```
 
-- **API**: http://localhost:3000/api
-- **Frontend**: http://localhost:4200
+- **Frontend**: http://localhost:4200 (proxies `/api` to backend)
+- **Backend** (direct): http://localhost:3002
 
 ### Docker
 
@@ -82,12 +131,19 @@ docker-compose up --build
 
 ### Environment
 
-- **Backend**: Uses `PORT` (default 3000), `FRONTEND_URL` (default http://localhost:4200) for CORS
-- **Frontend**: `src/environments/environment.ts` — `apiUrl` for development; replaced in production
+- **Backend**: Uses `PORT` (default 3002 for dev; 3000 for Docker), `FRONTEND_URL` (default http://localhost:4200) for CORS
+- **Frontend**: `src/environments/environment.ts` — `apiUrl` is `/api` (proxied in dev to backend)
+- **Dev proxy**: `proxy.conf.json` forwards `/api/**` → `http://localhost:3002`
 
 ---
 
 ## Data Sources & Backend Logic
+
+### Patients API
+
+`backend/src/patients/patients.service.ts` — In-memory patient store. Patients are registered at intake and receive check-ins. Staff can record a check-in (`POST /patients/:id/staff-checkin`) and remove patients from the queue (`DELETE /patients/:id`) when sent to doctor. `lastStaffCheckInAt` tracks when staff last checked in with a patient. All patients are assumed checked-in after completing the check-in form (no missed-check-in logic).
+
+**Data model** — `StoredPatient`: `id`, `waitStart`, `vulnerabilityScore`, `burdenIndex`, `alertLevel`, `flags` (AccessibilityFlags), `checkIns` (discomfort, needsHelp, planningToLeave, assistanceRequested, planningToLeaveChoice, timestamp), `lastStaffCheckInAt`, `assignedHospitalKey`, `estimatedCtasLevel`, etc.
 
 ### Alberta Wait Times Snapshot
 
@@ -146,40 +202,60 @@ Update `snapshotTakenAt` and `waitMinutes` / `lwbsRate` before demos as data cha
 
 ### Admin Dashboard
 
-Read-only view computed from frontend `PatientStoreService` (same data as Staff). No backend endpoint.
+Read-only view computed from frontend `PatientStoreService` (same data as Staff). Polls `GET /patients` every 3s and runs burden refresh so it reflects the same simulations and burden data as Staff.
 
-- **Model Health** — Alert distribution (% Green/Amber/Red), average burden (30–55 normal, 70+ strain), missed check-in rate.
+- **Hero metrics** — Average Burden Index, Total Patients, High LWBS Risk (green gradient card).
+- **Model Health** — Alert distribution (% Green/Amber/Red), average burden (30–55 normal, 70+ strain).
 - **Equity Overview** — Average burden by flag (mobility, chronicPain, sensory, cognitive, language, alone) and % Red by flag.
-- **Footer** — Model anchors from `modelConstants.ts` and `vulnerabilityWeights.ts`: CIHI medians (238 min total, 90 min to physician), McMaster early risk (87 min), LWBS source (HQCA), weights source (Statistics Canada).
+- **Model Data Sources** — CIHI, McMaster Health Forum, HQCA, Statistics Canada.
 
 **Safety** — Admin cannot change thresholds, weights, patients, LWBS scaling, or triage.
 
 ### Staff Dashboard UI Logic
 
-**Missed check-in** — Last check-in > 20 min ago (`CHECK_IN_INTERVAL_MS`). Shown as orange badge.
+**Check-in assumption** — Every patient is treated as checked-in after filling the check-in form. No "Missed check-in" label or badge is shown.
 
-**Disengagement warning** — Shown only when any of: `minutesWaited >= 87` OR `intendsToStay === false` OR `burden >= 70` OR **credible risk pattern**: `missedCheckIn` AND `minutesWaited > 87` AND `burden > 55` (patient stopped engaging + past early-risk window + elevated burden).
+**LWBS risk** — "Risk of leaving without being seen" uses burden-curve-based LWBS probability. When a patient indicates "Thinking of leaving" in a check-in, the metric is fixed at **80%**.
 
-**Suggested actions** — Credible risk pattern → "Immediate staff outreach — credible disengagement risk"; otherwise `minutesWaited < 87` and intends to stay → "Accessibility check (optional)"; else flag-based actions.
+**Check-in display** — Recent check-ins (within 5 min) show "New check-in"; older ones show "Latest check-in" with time ago.
+
+**Staff actions**:
+- **Staff checked in with patient** — Button to record that staff has checked in with the patient (updates `lastStaffCheckInAt`).
+- **Sent to Doctor — Off Queue** — Button to mark patient as sent to doctor and remove from queue. Calls `DELETE /patients/:id` so the patient is permanently removed and does not reappear on sync.
+
+**Disengagement warning** — Shown when: `minutesWaited >= 87` OR `intendsToStay === false` OR `burden >= 70`.
+
+**Suggested actions** — Flag-based (e.g. Provide seating support, Support staff check-in, Confirm patient intends to stay when planning to leave).
 
 ### Frontend Lib
 
-- `frontend/src/lib/model/modelConstants.ts` — CIHI + McMaster constants
-- `frontend/src/lib/model/vulnerabilityWeights.ts` — StatsCan-informed weights
-- `frontend/src/lib/data/albertaERs.ts` — Alberta hospital list (AHS, HQCA)
-- `frontend/src/lib/model/burden.ts` — `shouldSuggestAmberCheckIn(minutesWaited, burden)`
-- `frontend/src/app/core/services/admin-summary.service.ts` — Computes admin summary from PatientStore (alert distribution, avg burden, equity by flag)
+| Path | Purpose |
+|------|---------|
+| `lib/model/modelConstants.ts` | CIHI + McMaster constants |
+| `lib/model/vulnerabilityWeights.ts` | StatsCan-informed weights |
+| `lib/data/albertaERs.ts` | Alberta hospital list (AHS, HQCA) |
+| `lib/model/burden.ts` | `shouldSuggestAmberCheckIn(minutesWaited, burden)` |
+| `core/services/api.service.ts` | HTTP client (base URL from environment) |
+| `core/services/patients.service.ts` | `register`, `getAll`, `getByHospital`, `staffCheckIn`, `remove`, `addCheckIn` |
+| `core/services/check-in.service.ts` | Wraps patient check-in API |
+| `core/services/burden-modeling.service.ts` | `computeBurden`, `getEstimatedWaitMinutes` |
+| `core/services/wait-times.service.ts` | Facilities, snapshot, hospital wait time |
+| `core/services/admin-summary.service.ts` | Alert distribution, avg burden, equity by flag from store |
+| `core/patient-store.service.ts` | Patient state, burden curves, burden/alert computation |
+| `core/burden-updater.service.ts` | Periodic burden refresh via backend |
+| `core/auth/auth.service.ts` | Staff session (hospital code 001–005), patient session |
+| `core/auth/staff.guard.ts` | Guards `/staff` and `/admin` |
 
 ---
 
 ## Project Context
 
-AccessER does **not** diagnose, prioritize treatment, or provide medical advice. It operates as an accessibility and system-equity support layer alongside existing clinical workflows.
+FairQ does **not** diagnose, prioritize treatment, or provide medical advice. It operates as an accessibility and system-equity support layer alongside existing clinical workflows.
 
 | Layer | Purpose |
 |-------|---------|
-| **Patient** | Accessibility intake, burden curves, 20-min check-ins |
-| **Staff** | Queue Equity View, risk indicators, suggested actions |
+| **Patient** | Accessibility intake, burden curves, check-in form (discomfort, planning to stay/leave, needs) |
+| **Staff** | Queue Equity View, LWBS risk, suggested actions, staff check-in recording, send to doctor (off queue) |
 | **Admin** | Model health & equity overview — observation only (no thresholds, weights, or patient overrides) |
 
 ---
