@@ -30,7 +30,7 @@ export interface CheckInFormResult {
                 />
                 <label [for]="'checkin-discomfort-' + level.value" class="discomfort-label-btn">
                   <span class="emoji" aria-hidden="true">{{ level.emoji }}</span>
-                  <span class="label">{{ level.value }} {{ i18n.t('discomfort' + level.value) }}</span>
+                  <span class="label">{{ i18n.t('discomfort' + level.value) }}</span>
                 </label>
               </div>
             }

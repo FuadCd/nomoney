@@ -44,7 +44,7 @@ export interface ContextRiskResult {
               />
               <label [for]="'discomfort-' + level.value" class="discomfort-label-wrap">
                 <span class="discomfort-num">{{ level.value }}</span>
-                <span class="discomfort-label">{{ level.value }} {{ i18n.t('discomfort' + level.value) }}</span>
+                <span class="discomfort-label">{{ i18n.t('discomfort' + level.value) }}</span>
               </label>
             </div>
           }

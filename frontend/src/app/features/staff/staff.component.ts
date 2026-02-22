@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, signal, afterNextRender } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AsyncPipe, DecimalPipe } from '@angular/common';
 import { interval, Subscription } from 'rxjs';
@@ -240,17 +240,6 @@ const SYNC_INTERVAL_MS = 3000;
             }
           </div>
         </div>
-
-        <!-- Patient Check-In QR Code -->
-        @if (qrCodeDataUrl()) {
-          <div class="bg-white rounded-lg border border-gray-200 p-6 mt-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-2">Patient Check-In QR Code</h2>
-            <p class="text-sm text-gray-600 mb-4">Scan to start intake for {{ hospitalName() }}</p>
-            <div class="inline-block p-4 bg-white border border-gray-200 rounded-lg">
-              <img [src]="qrCodeDataUrl()" alt="QR code for patient intake" class="w-48 h-48" />
-            </div>
-          </div>
-        }
       </div>
     </div>
   `,
@@ -298,26 +287,9 @@ export class StaffComponent implements OnInit, OnDestroy {
   warningAlertsCount = signal(0);
   greenCount = signal(0);
   hospitalName = signal<string | null>(null);
-  qrCodeDataUrl = signal<string | null>(null);
 
   constructor() {
     this.hospitalName.set(this.auth.getStaffHospitalName());
-    afterNextRender(() => {
-      this.generateQrCode();
-    });
-  }
-
-  private async generateQrCode(): Promise<void> {
-    const key = this.auth.getStaffHospitalKey();
-    if (!key) return;
-    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/patient/intake/1?hospital=${encodeURIComponent(key)}`;
-    try {
-      const { default: QRCode } = await import('qrcode');
-      const dataUrl = await QRCode.toDataURL(url, { width: 256, margin: 2 });
-      this.qrCodeDataUrl.set(dataUrl);
-    } catch {
-      this.qrCodeDataUrl.set(null);
-    }
   }
 
   ngOnInit(): void {
@@ -410,8 +382,8 @@ export class StaffComponent implements OnInit, OnDestroy {
     1: 'Minimal',
     2: 'Mild',
     3: 'Moderate',
-    4: 'Severe',
-    5: 'Emergency',
+    4: 'High',
+    5: 'Severe',
   };
 
   private readonly discomfortEmojis: Record<number, string> = {

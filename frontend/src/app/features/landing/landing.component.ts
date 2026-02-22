@@ -2,12 +2,11 @@ import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth/auth.service';
-import { QrScannerComponent } from '../../components/qr-scanner/qr-scanner.component';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [FormsModule, QrScannerComponent],
+  imports: [FormsModule],
   template: `
     <main class="landing-wrap">
       <div class="landing-inner">
@@ -22,57 +21,54 @@ import { QrScannerComponent } from '../../components/qr-scanner/qr-scanner.compo
             <p class="text-sm text-gray-600 text-center mb-6">Accessibility-Adjusted Emergency Room Burden</p>
           </header>
 
-          <div class="space-y-3">
-            <input
-              id="hospital-code"
-              type="text"
-              [(ngModel)]="hospitalCode"
-              placeholder="Hospital code"
-              aria-label="Hospital code"
-              [attr.aria-describedby]="codeError ? 'hospital-code-error' : null"
-              [attr.aria-invalid]="!!codeError"
-              (keydown.enter)="submitCode()"
-              class="landing-input"
-            />
-            @if (codeError) {
-              <p id="hospital-code-error" class="text-sm text-red-600 landing-error" role="alert">{{ codeError }}</p>
-            }
-            <button
-              type="button"
-              (click)="submitCode()"
-              class="landing-btn landing-btn-staff"
-            >
-              Staff access
-            </button>
-          </div>
-
-          <div class="flex items-center gap-4 my-6">
-            <span class="flex-1 h-px bg-gray-200"></span>
-            <span class="text-sm text-gray-500">or</span>
-            <span class="flex-1 h-px bg-gray-200"></span>
-          </div>
-
-          <button
-            type="button"
-            (click)="goAsPatient()"
-            class="landing-btn landing-btn-patient"
-          >
-            I'm a patient
-          </button>
-
-          <button
-            type="button"
-            (click)="openQrScanner()"
-            class="landing-btn landing-btn-scan mt-3"
-          >
-            Scan QR Code
-          </button>
+          @if (!showStaffForm()) {
+            <div class="choice-buttons">
+              <p class="choice-label">Continue as:</p>
+              <button
+                type="button"
+                (click)="selectStaff()"
+                class="landing-btn landing-btn-staff"
+              >
+                Staff
+              </button>
+              <button
+                type="button"
+                (click)="goAsPatient()"
+                class="landing-btn landing-btn-patient"
+              >
+                Patient
+              </button>
+            </div>
+          } @else {
+            <div class="staff-form">
+              <button type="button" class="back-btn" (click)="showStaffForm.set(false)">&larr; Back</button>
+              <div class="space-y-3 mt-4">
+                <input
+                  id="hospital-code"
+                  type="text"
+                  [(ngModel)]="hospitalCode"
+                  placeholder="Hospital code"
+                  aria-label="Hospital code"
+                  [attr.aria-describedby]="codeError ? 'hospital-code-error' : null"
+                  [attr.aria-invalid]="!!codeError"
+                  (keydown.enter)="submitCode()"
+                  class="landing-input"
+                />
+                @if (codeError) {
+                  <p id="hospital-code-error" class="text-sm text-red-600 landing-error" role="alert">{{ codeError }}</p>
+                }
+                <button
+                  type="button"
+                  (click)="submitCode()"
+                  class="landing-btn landing-btn-staff"
+                >
+                  Staff access
+                </button>
+              </div>
+            </div>
+          }
         </div>
       </div>
-
-      @if (showQrScanner()) {
-        <app-qr-scanner (closed)="closeQrScanner()" />
-      }
     </main>
   `,
   styles: [
@@ -145,12 +141,29 @@ import { QrScannerComponent } from '../../components/qr-scanner/qr-scanner.compo
         color: white;
       }
       .landing-btn-patient:hover { background: #15803d; }
-      .landing-btn-scan {
-        background: transparent;
-        color: #2563eb;
-        border: 2px solid #2563eb;
+      .choice-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
       }
-      .landing-btn-scan:hover { background: #eff6ff; }
+      .choice-label {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #374151;
+        margin: 0 0 0.25rem;
+      }
+      .staff-form {
+        text-align: left;
+      }
+      .back-btn {
+        background: none;
+        border: none;
+        padding: 0.25rem 0;
+        font-size: 0.875rem;
+        color: #6b7280;
+        cursor: pointer;
+      }
+      .back-btn:hover { color: #374151; text-decoration: underline; }
     `,
   ],
 })
@@ -160,14 +173,10 @@ export class LandingComponent {
 
   hospitalCode = '';
   codeError = '';
-  showQrScanner = signal(false);
+  showStaffForm = signal(false);
 
-  openQrScanner(): void {
-    this.showQrScanner.set(true);
-  }
-
-  closeQrScanner(): void {
-    this.showQrScanner.set(false);
+  selectStaff(): void {
+    this.showStaffForm.set(true);
   }
 
   submitCode(): void {
@@ -186,6 +195,6 @@ export class LandingComponent {
 
   goAsPatient(): void {
     this.auth.setPatientSession();
-    this.router.navigate(['/patient']);
+    this.router.navigate(['/patient/intake/1']);
   }
 }
